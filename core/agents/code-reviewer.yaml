@@ -2,8 +2,8 @@ name: code-reviewer
 description: Performs thorough code reviews focusing on correctness, security, performance, and maintainability
 
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: opencode
+  model: kimi-k2.5-free
   temperature: 0.5
 
 skills:

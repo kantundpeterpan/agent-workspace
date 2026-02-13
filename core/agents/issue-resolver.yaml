@@ -2,9 +2,9 @@ name: issue-resolver
 description: Expert debugger that investigates and fixes GitHub issues systematically
 
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
-  temperature: 0.7
+  provider: opencode
+  model: kimi-k2.5-free
+  temperature: 0.5
 
 skills:
   - github-issue-resolution

@@ -48,6 +48,15 @@ else
     echo "  ⚠️  OpenCode platform not found"
 fi
 
+# Setup .opencode directory
+echo "🔧 Setting up .opencode directory..."
+if [ -d "$WORKSPACE_DIR/platforms/opencode" ]; then
+    create_symlink "$WORKSPACE_DIR/platforms/opencode" "$PROJECT_ROOT/.opencode"
+    mkdir -p "$PROJECT_ROOT/.opencode/skills"
+else
+    echo "  ⚠️  OpenCode platform not found"
+fi
+
 # Setup Continue
 echo "🔧 Setting up Continue.dev..."
 if [ -d "$WORKSPACE_DIR/platforms/continue" ]; then
@@ -70,6 +79,7 @@ echo "✅ Setup complete!"
 echo ""
 echo "Your project now has symlinks to:"
 echo "  - .agents/ -> agent-workspace/platforms/opencode/"
+echo "  - .opencode/ -> agent-workspace/platforms/opencode/"
 echo "  - .continue/ -> agent-workspace/platforms/continue/"
 echo "  - CLAUDE.md -> agent-workspace/platforms/claude/CLAUDE.md"
 echo ""
