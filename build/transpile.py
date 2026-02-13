@@ -63,7 +63,6 @@ def generate_opencode_config(core_path: Path) -> Dict:
         "$schema": "https://opencode.ai/config.json",
         "mcp": {},
         "agent": {},
-        "rules": [],
         "tools": {},
     }
 
@@ -106,18 +105,9 @@ def generate_opencode_config(core_path: Path) -> Dict:
 
             config["agent"][name] = opencode_agent
 
-    # Load rules
-    rules_path = core_path / "rules"
-    if rules_path.exists():
-        for category_dir in rules_path.iterdir():
-            if category_dir.is_dir():
-                for rule_file in category_dir.glob("*.md"):
-                    rule_content = load_rule(rule_file)
-                    # Extract content after frontmatter
-                    if rule_content.startswith("---"):
-                        parts = rule_content.split("---", 2)
-                        if len(parts) >= 3:
-                            config["rules"].append(parts[2].strip())
+    # Note: rules are intentionally not included in opencode.json
+    # The OpenCode config schema does not include a top-level "rules" field,
+    # so we skip compiling rule files into opencode.json.
 
     return config
 
@@ -323,7 +313,13 @@ def main():
 
     all_success = True
     for target in targets:
-        target_output = output_path / target
+        # Avoid creating a redundant nested directory when the provided
+        # output path already points to the target folder (e.g. --output platforms/opencode/).
+        if output_path.name == target:
+            target_output = output_path
+        else:
+            target_output = output_path / target
+
         if not transpile(target, core_path, target_output):
             all_success = False
 
