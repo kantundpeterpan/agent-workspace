@@ -5,7 +5,6 @@ Analyzes project dependencies for security vulnerabilities and outdated packages
 """
 
 import json
-import sys
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -154,11 +153,21 @@ def check_pip_outdated(project_path: str) -> List[Dict[str, Any]]:
 
 def analyze_dependencies(
     project_path: str,
-    check_security: bool,
-    check_outdated: bool,
-    severity_threshold: str,
+    check_security: bool = True,
+    check_outdated: bool = True,
+    severity_threshold: str = "moderate",
 ) -> Dict[str, Any]:
-    """Analyze project dependencies."""
+    """Analyze project dependencies.
+
+    Args:
+        project_path: Path to the project root directory
+        check_security: Whether to check for security vulnerabilities
+        check_outdated: Whether to check for outdated packages
+        severity_threshold: Minimum severity level to report (low, moderate, high, critical)
+
+    Returns:
+        Analysis results with vulnerabilities, outdated packages, and summary
+    """
     path = Path(project_path)
 
     if not path.exists():
@@ -212,37 +221,7 @@ def analyze_dependencies(
     }
 
 
-def main():
-    """Main entry point."""
-    # Read input from stdin
-    try:
-        input_data = json.load(sys.stdin)
-    except json.JSONDecodeError as e:
-        print(json.dumps({"status": "error", "error": f"Invalid JSON input: {str(e)}"}))
-        sys.exit(1)
-
-    # Extract parameters
-    project_path = input_data.get("project_path")
-    check_security = input_data.get("check_security", True)
-    check_outdated = input_data.get("check_outdated", True)
-    severity_threshold = input_data.get("severity_threshold", "moderate")
-
-    if not project_path:
-        print(
-            json.dumps(
-                {"status": "error", "error": "Missing required parameter: project_path"}
-            )
-        )
-        sys.exit(1)
-
-    # Analyze
-    result = analyze_dependencies(
-        project_path, check_security, check_outdated, severity_threshold
-    )
-
-    # Output JSON
-    print(json.dumps(result, indent=2))
-
-
 if __name__ == "__main__":
-    main()
+    import fire
+
+    fire.Fire(analyze_dependencies)

@@ -11,6 +11,9 @@ import argparse
 from pathlib import Path
 from typing import Dict, List, Any
 
+# Import the opencode tools transpiler
+from opencode_tools import generate_opencode_tools
+
 
 def load_agent(agent_path: Path) -> Dict:
     """Load an agent definition."""
@@ -256,6 +259,11 @@ def transpile(target: str, core_path: Path, output_path: Path) -> bool:
             with open(output_path / "opencode.json", "w") as f:
                 json.dump(config, f, indent=2)
             print(f"  ✅ Generated opencode.json")
+
+            # Generate custom tools
+            print(f"  🔧 Generating custom tools...")
+            if not generate_opencode_tools(core_path, output_path):
+                print(f"  ⚠️  Some tools failed to transpile")
 
             # Copy skills
             copy_skills(core_path, output_path)

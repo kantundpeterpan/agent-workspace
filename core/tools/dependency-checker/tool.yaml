@@ -1,6 +1,12 @@
 name: dependency-checker
 description: Analyzes project dependencies for security vulnerabilities and outdated packages
 
+# Fire CLI exports - defines which objects/functions to expose
+exports:
+  - name: analyze_dependencies
+    type: function
+    object: analyze_dependencies
+
 schema:
   input:
     type: object

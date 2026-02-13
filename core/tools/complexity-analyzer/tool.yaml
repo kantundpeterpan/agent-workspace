@@ -1,6 +1,12 @@
 name: complexity-analyzer
 description: Analyzes code complexity using cyclomatic and cognitive complexity metrics
 
+# Fire CLI exports - defines which objects/functions to expose
+exports:
+  - name: analyze_file
+    type: function
+    object: analyze_file
+
 schema:
   input:
     type: object

@@ -5,7 +5,6 @@ Analyzes cyclomatic and cognitive complexity of source code files.
 """
 
 import json
-import sys
 import re
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -97,9 +96,18 @@ def extract_functions(code: str, language: str) -> List[Dict[str, Any]]:
 
 
 def analyze_file(
-    file_path: str, threshold: int, include_cognitive: bool
+    file_path: str, threshold: int = 10, include_cognitive: bool = True
 ) -> Dict[str, Any]:
-    """Analyze a single file for complexity."""
+    """Analyze a single file for complexity.
+
+    Args:
+        file_path: Path to the source file to analyze
+        threshold: Cyclomatic complexity threshold for warnings
+        include_cognitive: Whether to include cognitive complexity analysis
+
+    Returns:
+        Analysis results with score, functions, and recommendations
+    """
     path = Path(file_path)
 
     if not path.exists():
@@ -178,34 +186,7 @@ def analyze_file(
     }
 
 
-def main():
-    """Main entry point."""
-    # Read input from stdin
-    try:
-        input_data = json.load(sys.stdin)
-    except json.JSONDecodeError as e:
-        print(json.dumps({"status": "error", "error": f"Invalid JSON input: {str(e)}"}))
-        sys.exit(1)
-
-    # Extract parameters
-    file_path = input_data.get("file_path")
-    threshold = input_data.get("threshold", 10)
-    include_cognitive = input_data.get("include_cognitive", True)
-
-    if not file_path:
-        print(
-            json.dumps(
-                {"status": "error", "error": "Missing required parameter: file_path"}
-            )
-        )
-        sys.exit(1)
-
-    # Analyze
-    result = analyze_file(file_path, threshold, include_cognitive)
-
-    # Output JSON
-    print(json.dumps(result, indent=2))
-
-
 if __name__ == "__main__":
-    main()
+    import fire
+
+    fire.Fire(analyze_file)
