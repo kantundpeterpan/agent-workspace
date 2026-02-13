@@ -1,0 +1,37 @@
+name: code-complexity-check
+description: Analyzes code complexity metrics to identify functions needing refactoring
+version: 1.0.0
+
+schema:
+  type: function
+  function:
+    name: code_complexity_check
+    description: Calculate cyclomatic complexity and other metrics for code files
+    parameters:
+      type: object
+      properties:
+        file_path:
+          type: string
+          description: Path to the code file to analyze
+        threshold:
+          type: integer
+          description: Complexity threshold (functions above this are flagged)
+          default: 10
+        language:
+          type: string
+          enum: [python, javascript, typescript, auto]
+          description: Programming language (auto-detect if not specified)
+          default: auto
+      required:
+        - file_path
+
+script: ./scripts/complexity.py
+
+platforms:
+  - opencode
+  - continue
+
+dependencies:
+  python:
+    - radon
+    - lizard
