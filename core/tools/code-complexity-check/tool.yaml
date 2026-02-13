@@ -25,7 +25,7 @@ schema:
       required:
         - file_path
 
-script: ./scripts/complexity.py
+script: python tool.py
 
 platforms:
   - opencode
@@ -33,5 +33,6 @@ platforms:
 
 dependencies:
   python:
+    - fire
     - radon
     - lizard
