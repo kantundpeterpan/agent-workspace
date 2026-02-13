@@ -1,7 +1,9 @@
+# yaml-language-server: $schema=../../schemas/tool.json
+
 name: pomodoro-timer
 description: Manages timed coding rounds with notifications for pair programming sessions
 
-# Fire CLI exports - defines which objects/functions to expose
+# Fire CLI  - defines which objects/functions to expose
 exports:
   - name: start
     type: function
@@ -57,3 +59,9 @@ schema:
 implementation:
   language: python
   entry: script.py
+
+platform:
+  opencode:
+    contextMapping:
+      sessionID: session_id
+      
