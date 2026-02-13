@@ -281,7 +281,9 @@ class OpenCodeToolTranspiler:
                     ts_content = self._generate_function_tool(
                         tool_name, export["name"], sig, script_path, tool_dir
                     )
-                    filename = f"{export['name']}.ts"
+                    # Place TypeScript files directly in the tools/ folder, prefix
+                    # filenames with the tool name to avoid collisions.
+                    filename = f"{tool_name}_{export['name']}.ts"
                     ts_files[filename] = ts_content
 
             elif export["type"] == "class":
@@ -297,7 +299,8 @@ class OpenCodeToolTranspiler:
                             script_path,
                             tool_dir,
                         )
-                        filename = f"{export['name']}_{method}.ts"
+                        # Prefix with tool name and include method to avoid collisions
+                        filename = f"{tool_name}_{export['name']}_{method}.ts"
                         ts_files[filename] = ts_content
 
         return ts_files
@@ -333,13 +336,29 @@ class OpenCodeToolTranspiler:
 
         args_str = ",\n".join(args_lines)
 
-        # Calculate relative path from workspace root to output location
-        # Output goes to platforms/opencode/tools/{tool_name}/
+        # Calculate relative path from workspace root to the Python script
+        # Python sources remain in core/tools and are read at runtime from there.
         script_name = script_path.name
-        rel_script_path = f"platforms/opencode/tools/{tool_name}/{script_name}"
+        rel_script_path = f"core/tools/{tool_dir.name}/{script_name}"
 
         return f'''import {{ tool }} from "@opencode-ai/plugin"
-import path from "path"
+ import path from "path"
+ import fs from "fs"
+
+function resolveScriptPath(worktree) {{
+  const rel = "{rel_script_path}"
+  const direct = path.join(worktree, rel)
+  if (fs.existsSync(direct)) return direct
+  // If this repo is a submodule, the agent-workspace may be in a subdirectory.
+  // Look one level deep for a matching rel path (fast heuristic).
+  try {{
+    for (const entry of fs.readdirSync(worktree)) {{
+      const candidate = path.join(worktree, entry, rel)
+      if (fs.existsSync(candidate)) return candidate
+    }}
+  }} catch (e) {{}}
+  return direct
+}}
 
 export default tool({{
   description: "{sig.description}",
@@ -347,7 +366,7 @@ export default tool({{
 {args_str}
   }},
   async execute(args, context) {{
-    const script = path.join(context.worktree, "{rel_script_path}")
+    const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${{k}}=${{JSON.stringify(v)}}`])
     const result = await Bun.$`python3 ${{script}} {export_name} ${{argList}}`.text()
     return JSON.parse(result.trim())
@@ -376,13 +395,27 @@ export default tool({{
 
         args_str = ",\n".join(args_lines)
 
-        # Calculate relative path from workspace root to output location
-        # Output goes to platforms/opencode/tools/{tool_name}/
+        # Calculate relative path from workspace root to the Python script
+        # Python sources remain in core/tools and are read at runtime from there.
         script_name = script_path.name
-        rel_script_path = f"platforms/opencode/tools/{tool_name}/{script_name}"
+        rel_script_path = f"core/tools/{tool_dir.name}/{script_name}"
 
         return f'''import {{ tool }} from "@opencode-ai/plugin"
-import path from "path"
+ import path from "path"
+ import fs from "fs"
+
+function resolveScriptPath(worktree) {{
+  const rel = "{rel_script_path}"
+  const direct = path.join(worktree, rel)
+  if (fs.existsSync(direct)) return direct
+  try {{
+    for (const entry of fs.readdirSync(worktree)) {{
+      const candidate = path.join(worktree, entry, rel)
+      if (fs.existsSync(candidate)) return candidate
+    }}
+  }} catch (e) {{}}
+  return direct
+}}
 
 export default tool({{
   description: "{sig.description}",
@@ -390,7 +423,7 @@ export default tool({{
 {args_str}
   }},
   async execute(args, context) {{
-    const script = path.join(context.worktree, "{rel_script_path}")
+    const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${{k}}=${{JSON.stringify(v)}}`])
     const result = await Bun.$`python3 ${{script}} {class_name} {method_name} ${{argList}}`.text()
     return JSON.parse(result.trim())
@@ -431,27 +464,18 @@ def generate_opencode_tools(core_path: Path, output_path: Path) -> bool:
             tool_name = tool_yaml.get("name", tool_dir.name)
             print(f"  🔧 Transpiling tool: {tool_name}")
 
-            # Create subdirectory for this tool
-            tool_output_path = output_tools_path / tool_name
-            tool_output_path.mkdir(parents=True, exist_ok=True)
-
             ts_files = transpiler.transpile_tool(tool_dir, tool_yaml)
 
+            # Write TypeScript files directly into the tools/ output folder
             for filename, content in ts_files.items():
-                output_file = tool_output_path / filename
+                output_file = output_tools_path / filename
                 with open(output_file, "w") as f:
                     f.write(content)
-                print(f"    ✅ Generated {tool_name}/{filename}")
+                print(f"    ✅ Generated {filename}")
 
-            # Copy Python script to output
-            script_name = tool_yaml["implementation"]["entry"]
-            script_src = tool_dir / script_name
-            if script_src.exists():
-                import shutil
-
-                script_dst = tool_output_path / script_name
-                shutil.copy2(script_src, script_dst)
-                print(f"    ✅ Copied {tool_name}/{script_name}")
+            # Do NOT copy Python sources into the output. Python implementations
+            # remain under core/tools and are referenced from the generated
+            # TypeScript code at runtime.
 
         except Exception as e:
             print(f"  ❌ Error transpiling {tool_dir.name}: {e}")
