@@ -28,6 +28,6 @@ export default tool({
     const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${k}=${JSON.stringify(v)}`])
     const result = await Bun.$`python3 ${script} analyze_file ${argList}`.text()
-    return JSON.parse(result.trim())
+    return result.trim()
   }
 })

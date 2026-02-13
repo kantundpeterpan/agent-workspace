@@ -369,9 +369,9 @@ export default tool({{
     const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${{k}}=${{JSON.stringify(v)}}`])
     const result = await Bun.$`python3 ${{script}} {export_name} ${{argList}}`.text()
-    return JSON.parse(result.trim())
+    return result.trim()
   }}
-}})'''
+  }})'''
 
     def _generate_method_tool(
         self,
@@ -426,9 +426,9 @@ export default tool({{
     const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${{k}}=${{JSON.stringify(v)}}`])
     const result = await Bun.$`python3 ${{script}} {class_name} {method_name} ${{argList}}`.text()
-    return JSON.parse(result.trim())
+    return result.trim()
   }}
-}})'''
+  }})'''
 
 
 def generate_opencode_tools(core_path: Path, output_path: Path) -> bool:
