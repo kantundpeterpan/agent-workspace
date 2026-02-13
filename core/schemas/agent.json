@@ -70,8 +70,10 @@
       "type": "object",
       "description": "Tool permissions for this agent",
       "additionalProperties": {
-        "type": "string",
-        "enum": ["allow", "ask", "deny", true, false]
+        "anyOf": [
+          { "type": "boolean" },
+          { "type": "string", "enum": ["allow", "deny"] }
+        ]
       }
     },
     "system_prompt": {
