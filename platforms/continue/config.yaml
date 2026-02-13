@@ -3,6 +3,11 @@ version: 1.0.0
 schema: v1
 models: []
 mcpServers:
+- name: context7
+  command: curl
+  args:
+  - -s
+  - https://mcp.context7.com/mcp
 - name: git
   command: git-mcp-server
   args: []
