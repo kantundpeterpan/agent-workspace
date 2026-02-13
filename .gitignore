@@ -6,7 +6,11 @@ __pycache__/
 .Python
 *.egg-info/
 dist/
-build/
+
+# Python build artifacts (not our build/ dir)
+build/lib/
+build/bdist.*
+build/scripts*/
 
 # Virtual environments
 venv/
