@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": ["start", "status", "stop", "pause", "resume"],
+      "description": "Timer action to perform"
+    },
+    "duration": {
+      "type": "integer",
+      "default": 25,
+      "minimum": 1,
+      "maximum": 120,
+      "description": "Duration in minutes (for start action)"
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["brainstorm", "plan", "implement", "review", "break"],
+      "description": "Session phase label"
+    }
+  }
+}

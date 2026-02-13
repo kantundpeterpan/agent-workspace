@@ -1,36 +1,59 @@
 name: pomodoro-timer
 description: Manages timed coding rounds with notifications for pair programming sessions
-version: 1.0.0
+
+# Fire CLI exports - defines which objects/functions to expose
+exports:
+  - name: start
+    type: function
+    object: start
+  - name: status
+    type: function
+    object: status
+  - name: stop
+    type: function
+    object: stop
+  - name: pause
+    type: function
+    object: pause
+  - name: resume
+    type: function
+    object: resume
 
 schema:
-  type: function
-  function:
-    name: pomodoro_timer
-    description: Start, check, or stop a pomodoro timer for structured coding sessions
-    parameters:
-      type: object
-      properties:
-        action:
-          type: string
-          enum: [start, status, stop, pause, resume]
-          description: Timer action to perform
-        duration:
-          type: integer
-          description: Duration in minutes (for start action)
-          default: 25
-        phase:
-          type: string
-          enum: [brainstorm, plan, implement, review, break]
-          description: Session phase label
-      required:
-        - action
+  input:
+    type: object
+    properties:
+      action:
+        type: string
+        enum: [start, status, stop, pause, resume]
+        description: Timer action to perform
+      duration:
+        type: integer
+        default: 25
+        description: Duration in minutes (for start action)
+      phase:
+        type: string
+        enum: [brainstorm, plan, implement, review, break]
+        description: Session phase label
+  
+  output:
+    type: object
+    required: [message, status]
+    properties:
+      message:
+        type: string
+        description: Status or confirmation message
+      status:
+        type: string
+        enum: [running, paused, stopped, complete, idle]
+        description: Current timer state
+      remaining:
+        type: integer
+        description: Remaining time in seconds (if active)
+      phase:
+        type: string
+        description: Current session phase
 
-script: python tool.py
-
-platforms:
-  - opencode
-  - continue
-
-dependencies:
-  python:
-    - fire
+implementation:
+  language: python
+  entry: script.py

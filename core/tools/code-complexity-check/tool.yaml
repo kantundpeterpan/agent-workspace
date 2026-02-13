@@ -1,38 +1,81 @@
 name: code-complexity-check
 description: Analyzes code complexity metrics to identify functions needing refactoring
-version: 1.0.0
+
+# Fire CLI exports - defines which objects/functions to expose
+exports:
+  - name: analyze
+    type: function
+    object: analyze
 
 schema:
-  type: function
-  function:
-    name: code_complexity_check
-    description: Calculate cyclomatic complexity and other metrics for code files
-    parameters:
-      type: object
-      properties:
-        file_path:
-          type: string
-          description: Path to the code file to analyze
-        threshold:
-          type: integer
-          description: Complexity threshold (functions above this are flagged)
-          default: 10
-        language:
-          type: string
-          enum: [python, javascript, typescript, auto]
-          description: Programming language (auto-detect if not specified)
-          default: auto
-      required:
-        - file_path
+  input:
+    type: object
+    required: [file_path]
+    properties:
+      file_path:
+        type: string
+        description: Path to the code file to analyze
+      threshold:
+        type: number
+        default: 10
+        description: Complexity threshold (functions above this are flagged)
+      language:
+        type: string
+        enum: [python, javascript, typescript, auto]
+        default: auto
+        description: Programming language (auto-detect if not specified)
+  
+  output:
+    type: object
+    required: [status, file]
+    properties:
+      status:
+        type: string
+        enum: [success, error]
+        description: Analysis status
+      file:
+        type: string
+        description: Analyzed file path
+      language:
+        type: string
+        description: Detected or specified language
+      threshold:
+        type: number
+        description: Complexity threshold used
+      flagged_functions:
+        type: array
+        description: Functions exceeding complexity threshold
+        items:
+          type: object
+          required: [function, complexity, line]
+          properties:
+            function:
+              type: string
+              description: Function name
+            complexity:
+              type: number
+              description: Cyclomatic complexity score
+            line:
+              type: number
+              description: Line number where function starts
+            rank:
+              type: string
+              description: Complexity rank (A-F)
+      summary:
+        type: object
+        properties:
+          total_flagged:
+            type: integer
+            description: Number of functions exceeding threshold
+          recommendations:
+            type: array
+            items:
+              type: string
+            description: Refactoring suggestions
+      error:
+        type: string
+        description: Error message if analysis failed
 
-script: python tool.py
-
-platforms:
-  - opencode
-  - continue
-
-dependencies:
-  python:
-    - fire
-    - radon
-    - lizard
+implementation:
+  language: python
+  entry: script.py
