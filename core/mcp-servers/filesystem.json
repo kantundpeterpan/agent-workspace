@@ -1,0 +1,21 @@
+{
+  "name": "filesystem",
+  "type": "local",
+  "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem"],
+  "enabled": false,
+  "metadata": {
+    "description": "File system operations for reading and writing files",
+    "required_env": [],
+    "optional_env": [],
+    "tools": [
+      "read_file",
+      "write_file",
+      "list_directory",
+      "create_directory",
+      "move_file",
+      "search_files",
+      "get_file_info"
+    ],
+    "notes": "Disabled by default for security. Enable only when needed."
+  }
+}

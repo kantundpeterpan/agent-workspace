@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["file_path"],
+  "properties": {
+    "file_path": {
+      "type": "string",
+      "description": "Path to the source file to analyze"
+    },
+    "threshold": {
+      "type": "number",
+      "default": 10,
+      "description": "Cyclomatic complexity threshold for warnings",
+      "minimum": 1
+    },
+    "include_cognitive": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to include cognitive complexity analysis"
+    }
+  }
+}

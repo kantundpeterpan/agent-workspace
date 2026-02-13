@@ -1,0 +1,42 @@
+{
+  "name": "git",
+  "type": "local",
+  "command": ["git-mcp-server"],
+  "enabled": true,
+  "metadata": {
+    "description": "Git operations for repository management",
+    "required_env": [],
+    "optional_env": ["GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL"],
+    "tools": [
+      "git_status",
+      "git_log",
+      "git_diff",
+      "git_show",
+      "git_branch",
+      "git_checkout",
+      "git_add",
+      "git_commit",
+      "git_push",
+      "git_pull",
+      "git_fetch",
+      "git_merge",
+      "git_rebase",
+      "git_cherry_pick",
+      "git_revert",
+      "git_reset",
+      "git_clean",
+      "git_stash",
+      "git_submodule",
+      "git_worktree",
+      "git_bisect",
+      "git_blame",
+      "git_grep",
+      "git_clone",
+      "git_init",
+      "git_remote",
+      "git_config",
+      "git_tag"
+    ],
+    "installation": "npm install -g git-mcp-server"
+  }
+}

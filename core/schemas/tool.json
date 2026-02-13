@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Custom Tool Schema",
+  "description": "Schema for validating custom tool definitions",
+  "type": "object",
+  "required": ["name", "description", "schema", "implementation"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique identifier for the tool",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+    },
+    "description": {
+      "type": "string",
+      "description": "What this tool does"
+    },
+    "schema": {
+      "type": "object",
+      "required": ["input"],
+      "properties": {
+        "input": {
+          "$ref": "http://json-schema.org/draft-07/schema#"
+        },
+        "output": {
+          "$ref": "http://json-schema.org/draft-07/schema#"
+        }
+      }
+    },
+    "implementation": {
+      "type": "object",
+      "required": ["language", "entry"],
+      "properties": {
+        "language": {
+          "type": "string",
+          "enum": ["python", "bash", "javascript", "typescript"]
+        },
+        "entry": {
+          "type": "string",
+          "description": "Entry point script filename"
+        }
+      }
+    }
+  }
+}

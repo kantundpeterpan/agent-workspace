@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Definition Schema",
+  "description": "Schema for validating agent YAML definitions",
+  "type": "object",
+  "required": ["name", "description"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique identifier for the agent",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "description": {
+      "type": "string",
+      "description": "What this agent does and when to use it",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "model": {
+      "type": "object",
+      "description": "Model configuration for this agent",
+      "required": ["provider", "model"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["anthropic", "openai", "ollama", "mistral", "gemini", "azure"]
+        },
+        "model": {
+          "type": "string",
+          "description": "Model identifier (e.g., claude-3-5-sonnet, gpt-4)"
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "maxTokens": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "description": "Skills this agent can use",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+      }
+    },
+    "mcp_servers": {
+      "type": "array",
+      "description": "MCP servers available to this agent",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "description": "Rules to apply to this agent",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+/[a-z0-9-]+$"
+      }
+    },
+    "tools": {
+      "type": "object",
+      "description": "Tool permissions for this agent",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["allow", "ask", "deny", true, false]
+      }
+    },
+    "system_prompt": {
+      "type": "string",
+      "description": "System prompt for the agent"
+    }
+  },
+  "additionalProperties": false
+}

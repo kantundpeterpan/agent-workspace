@@ -1,0 +1,73 @@
+name: dependency-checker
+description: Analyzes project dependencies for security vulnerabilities and outdated packages
+
+schema:
+  input:
+    type: object
+    required: [project_path]
+    properties:
+      project_path:
+        type: string
+        description: Path to the project root directory
+      check_security:
+        type: boolean
+        default: true
+        description: Whether to check for security vulnerabilities
+      check_outdated:
+        type: boolean
+        default: true
+        description: Whether to check for outdated packages
+      severity_threshold:
+        type: string
+        default: moderate
+        enum: [low, moderate, high, critical]
+        description: Minimum severity level to report
+  
+  output:
+    type: object
+    required: [status]
+    properties:
+      status:
+        type: string
+        enum: [success, error]
+      project_type:
+        type: string
+        enum: [npm, pip, cargo, gem, composer, unknown]
+      vulnerabilities:
+        type: array
+        items:
+          type: object
+          properties:
+            package:
+              type: string
+            severity:
+              type: string
+              enum: [low, moderate, high, critical]
+            description:
+              type: string
+            fixed_in:
+              type: string
+      outdated:
+        type: array
+        items:
+          type: object
+          properties:
+            package:
+              type: string
+            current:
+              type: string
+            latest:
+              type: string
+      summary:
+        type: object
+        properties:
+          total_dependencies:
+            type: integer
+          vulnerable_count:
+            type: integer
+          outdated_count:
+            type: integer
+
+implementation:
+  language: python
+  entry: script.py

@@ -1,0 +1,75 @@
+name: complexity-analyzer
+description: Analyzes code complexity using cyclomatic and cognitive complexity metrics
+
+schema:
+  input:
+    type: object
+    required: [file_path]
+    properties:
+      file_path:
+        type: string
+        description: Path to the source file to analyze
+      threshold:
+        type: number
+        default: 10
+        description: Cyclomatic complexity threshold for warnings
+      include_cognitive:
+        type: boolean
+        default: true
+        description: Whether to include cognitive complexity analysis
+  
+  output:
+    type: object
+    required: [score, status]
+    properties:
+      score:
+        type: number
+        description: Overall complexity score for the file
+      status:
+        type: string
+        enum: [success, error]
+        description: Analysis status
+      file:
+        type: string
+        description: Analyzed file path
+      functions:
+        type: array
+        description: Complexity metrics for each function
+        items:
+          type: object
+          required: [name, complexity, line]
+          properties:
+            name:
+              type: string
+              description: Function name
+            complexity:
+              type: number
+              description: Cyclomatic complexity score
+            cognitive:
+              type: number
+              description: Cognitive complexity score
+            line:
+              type: number
+              description: Line number where function starts
+            warnings:
+              type: array
+              items:
+                type: string
+              description: Complexity warnings for this function
+      summary:
+        type: object
+        properties:
+          total_functions:
+            type: integer
+          high_complexity_count:
+            type: integer
+          average_complexity:
+            type: number
+          recommendations:
+            type: array
+            items:
+              type: string
+
+implementation:
+  language: python
+  entry: script.py

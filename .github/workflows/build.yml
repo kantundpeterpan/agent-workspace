@@ -1,0 +1,134 @@
+name: Build & Transpile
+
+on:
+  push:
+    branches: [main]
+    paths: ['core/**']
+  pull_request:
+    branches: [main]
+    paths: ['core/**']
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate Core Definitions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install pyyaml
+      
+      - name: Validate schemas
+        run: python build/validate.py
+      
+      - name: Check dependencies
+        run: python build/check-dependencies.py
+
+  transpile-opencode:
+    name: Transpile to OpenCode
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install pyyaml
+      
+      - name: Transpile to OpenCode
+        run: python build/transpile.py --target opencode --input core/ --output platforms/opencode/
+      
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add platforms/opencode/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "build: transpile to OpenCode [skip ci]"
+            git push
+          fi
+
+  transpile-continue:
+    name: Transpile to Continue
+    needs: transpile-opencode
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install pyyaml
+      
+      - name: Transpile to Continue
+        run: python build/transpile.py --target continue --input core/ --output platforms/continue/
+      
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add platforms/continue/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "build: transpile to Continue [skip ci]"
+            git push
+          fi
+
+  transpile-claude:
+    name: Transpile to Claude Code
+    needs: transpile-continue
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install pyyaml
+      
+      - name: Transpile to Claude
+        run: python build/transpile.py --target claude --input core/ --output platforms/claude/
+      
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add platforms/claude/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "build: transpile to Claude Code [skip ci]"
+            git push
+          fi

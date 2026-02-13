@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP Server Configuration Schema",
+  "description": "Schema for validating MCP server configurations (OpenCode format)",
+  "type": "object",
+  "required": ["name", "type"],
+  "oneOf": [
+    {
+      "$ref": "#/definitions/localServer"
+    },
+    {
+      "$ref": "#/definitions/remoteServer"
+    }
+  ],
+  "definitions": {
+    "localServer": {
+      "type": "object",
+      "required": ["name", "type", "command"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique identifier for the MCP server"
+        },
+        "type": {
+          "const": "local"
+        },
+        "command": {
+          "type": "array",
+          "description": "Command and arguments to run the MCP server",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "environment": {
+          "type": "object",
+          "description": "Environment variables for the server",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this server is enabled by default",
+          "default": true
+        },
+        "timeout": {
+          "type": "number",
+          "description": "Timeout in milliseconds for fetching tools",
+          "default": 5000
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional metadata about the server"
+        }
+      }
+    },
+    "remoteServer": {
+      "type": "object",
+      "required": ["name", "type", "url"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique identifier for the MCP server"
+        },
+        "type": {
+          "const": "remote"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the remote MCP server"
+        },
+        "headers": {
+          "type": "object",
+          "description": "Headers to send with requests",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "oauth": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "clientId": {
+                  "type": "string"
+                },
+                "clientSecret": {
+                  "type": "string"
+                },
+                "scope": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "boolean",
+              "enum": [false]
+            }
+          ]
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "timeout": {
+          "type": "number",
+          "default": 5000
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional metadata about the server"
+        }
+      }
+    }
+  }
+}
