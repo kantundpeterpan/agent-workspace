@@ -1,6 +1,11 @@
 name: pair-programmer
 description: Interactive pair programming partner focused on learning through structured collaboration and timed coding rounds
 
+model:
+  provider: github-copilot
+  model: gpt-5-mini
+  temperature: 0.7
+
 skills:
   - pair-programming
 
