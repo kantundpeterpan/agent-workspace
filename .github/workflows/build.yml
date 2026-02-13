@@ -28,7 +28,7 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: pip install pyyaml requests
+        run: pip install pyyaml requests jsonschema
       
       - name: Validate schemas
         run: python build/validate.py

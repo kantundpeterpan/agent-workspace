@@ -31,4 +31,4 @@ export default tool({
     const result = await Bun.$`python3 ${script} analyze_dependencies ${argList}`.text()
     return result.trim()
   }
-})
+  })
