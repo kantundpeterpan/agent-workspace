@@ -39,39 +39,105 @@ oc_default_url = "http://localhost:4096"
 
 
 def notify_opencode(
-        session_id: str, message: str,
-        model: Dict[str, str] = {'providerID':'github-copilot', 'modelID':'gpt-5-mini'}
-    ):
-
+    session_id: str,
+    message: str,
+    model: Dict[str, str] = {"providerID": "github-copilot", "modelID": "gpt-5-mini"},
+):
     from opencode_ai import Opencode
 
-    client = Opencode(base_url = oc_default_url, max_retries=1)
+    client = Opencode(base_url=oc_default_url, max_retries=1)
 
-    client.session.prompt(
-        id = session_id,
-        parts = [{'type':'text', 'text':message}]
-    )
+    client.session.prompt(id=session_id, parts=[{"type": "text", "text": message}])
 
+
+def access_timer_base(session_id: str) -> Path:
+    return Path(f"/tmp/{file_slug.format(session_id=session_id)}")
 
 
 def access_timer_file(session_id: str) -> Path:
-    return Path(f"/tmp/{file_slug.format(session_id=session_id)}")
+    return access_timer_base(session_id).with_suffix(".json")
+
+
+def access_pid_file(session_id: str) -> Path:
+    return access_timer_base(session_id).with_suffix(".pid")
+
 
 def status_poller(session_id: str, interval_s: int = 15):
-    import time, os
+    import os, signal, time
     from functools import partial
-    
+    from pathlib import Path
+
+    pidfile = access_pid_file(session_id)
+    logdir = Path("/tmp/opencode-pomodoro-logs")
+    try:
+        logdir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
+    # If pidfile exists and points to a live process, do not start another poller
+    if pidfile.exists():
+        try:
+            existing = int(pidfile.read_text())
+            if existing and existing != os.getpid():
+                # check process liveness; will raise if not alive
+                os.kill(existing, 0)
+                return
+        except Exception:
+            try:
+                pidfile.unlink()
+            except Exception:
+                pass
+
+    # write our pid so other starts can detect us
+    try:
+        pidfile.write_text(str(os.getpid()))
+    except Exception:
+        pass
+
+    def _cleanup(signum=None, frame=None):
+        try:
+            if pidfile.exists():
+                pidfile.unlink()
+        except Exception:
+            pass
+        raise SystemExit(0)
+
+    for sig in ("SIGINT", "SIGTERM"):
+        if hasattr(signal, sig):
+            signal.signal(getattr(signal, sig), _cleanup)
+
+    # create a wrapper so the on_finish callback receives a dict payload
+    # and forwards the message to notify_opencode
+    def _on_finish(payload: Dict[str, Any]):
+        try:
+            msg = payload.get("message") if isinstance(payload, dict) else str(payload)
+        except Exception:
+            msg = str(payload)
+        try:
+            notify_opencode(session_id, str(msg))
+        except Exception:
+            # best-effort notify
+            pass
+
     polling_func = partial(
-        status, session_id = session_id,
-        on_finish = partial(notify_opencode, session_id = session_id)
+        status,
+        session_id=session_id,
+        on_finish=_on_finish,
     )
 
-    if os.fork() != 0:
-        return
-
-    while True:
-        polling_func()
-        time.sleep(interval_s)
+    try:
+        while True:
+            try:
+                polling_func()
+            except Exception as e:
+                try:
+                    with open(logdir / f"poll_err-{session_id}.log", "a") as f:
+                        f.write(f"{time.time()}: poller error: {e}\n")
+                except Exception:
+                    pass
+            time.sleep(interval_s)
+    finally:
+        _cleanup()
 
 
 def start(
@@ -103,16 +169,51 @@ def start(
     timer = Timer(session_id=session_id, data=TimerData.model_validate(timer_data))
 
     # Persist the pydantic model as plain JSON
-    TIMER_FILE.write_text(json.dumps(timer.model_dump()))
+    TIMER_FILE.write_text(timer.model_dump_json(indent=2))
 
-    from multiprocessing import Process
+    # Launch a detached subprocess that runs the status_poller so start() returns
+    import sys, subprocess, os
+    from pathlib import Path
 
-    poller = Process(target = status_poller, kwargs={"session_id":session_id})
-    poller.start()    
-    poller.join()
+    logdir = Path("/tmp/opencode-pomodoro-logs")
+    try:
+        logdir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
 
-    print(json.dumps(timer.model_dump()))
-    return json.dumps(timer.model_dump())
+    logpath = logdir / f"pomodoro-{session_id}-{int(time.time())}.log"
+    out = open(logpath, "a")
+
+    # Start detached process: explicit kwargs per-platform to keep types clear
+    if os.name == "nt":
+        DETACHED_PROCESS = 0x00000008
+        CREATE_NEW_PROCESS_GROUP = 0x00000200
+        proc = subprocess.Popen(
+            [sys.executable, __file__, "status_poller", "--session_id", session_id],
+            stdout=out,
+            stderr=out,
+            close_fds=True,
+            creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+        )
+    else:
+        proc = subprocess.Popen(
+            [sys.executable, __file__, "status_poller", "--session_id", session_id],
+            stdout=out,
+            stderr=out,
+            close_fds=True,
+            start_new_session=True,
+        )
+
+    # write pidfile for dedupe
+    pidfile = access_pid_file(session_id)
+    try:
+        pidfile.write_text(str(proc.pid))
+    except Exception:
+        pass
+
+    # return immediately with timer info + background process details
+    print(timer.model_dump_json(indent=2))
+    return {"status": "started", "pid": proc.pid, "log": str(logpath)}
 
 
 def status(
@@ -135,14 +236,14 @@ def status(
         return {"status": "idle", "message": "No active timer"}
 
     timer = Timer.model_validate_json(TIMER_FILE.read_text())
-    current_time = (time.time())
+    current_time = time.time()
 
     if timer.data.status == "paused":
         return {
             "status": "paused",
             "message": f"⏸️  Timer paused in {timer.data.phase} phase",
             "phase": timer.data.phase,
-            "remaining": timer.data.get("remaining", 0),
+            "remaining": getattr(timer.data, "remaining", 0),
         }
 
     remaining = timer.data.end_time - current_time
@@ -151,15 +252,39 @@ def status(
         try:
             # If caller provided an on_finish callback, call it
             if on_finish:
-                on_finish(message = f"✅ Timer complete! ({timer.data.phase} phase finished)")
-
-        except Exception as e:
-            # don't let notifier failures crash status
-            raise e
+                try:
+                    on_finish(
+                        {
+                            "message": f"✅ Timer complete! ({timer.data.phase} phase finished)",
+                            "phase": timer.data.phase,
+                        }
+                    )
+                except Exception as notify_err:
+                    # log notifier failure but continue cleanup
+                    try:
+                        Path("/tmp/opencode-pomodoro-logs").mkdir(
+                            parents=True, exist_ok=True
+                        )
+                        with open(
+                            f"/tmp/opencode-pomodoro-logs/notify_err-{session_id}.log",
+                            "a",
+                        ) as f:
+                            f.write(f"{time.time()}: notify error: {notify_err}\n")
+                    except Exception:
+                        pass
 
         finally:
-            # remove timer file (same behavior as before)
-            TIMER_FILE.unlink()
+            # remove timer file and pidfile
+            try:
+                TIMER_FILE.unlink()
+            except Exception:
+                pass
+            try:
+                pidfile = access_pid_file(session_id)
+                if pidfile.exists():
+                    pidfile.unlink()
+            except Exception:
+                pass
 
         return {
             "status": "complete",
@@ -168,7 +293,7 @@ def status(
             "remaining": 0,
         }
 
-    minutes = remaining // 60
+    minutes = int(remaining // 60)
     seconds = int(remaining % 60)
 
     return {
@@ -180,7 +305,7 @@ def status(
 
 
 def stop(session_id: str) -> Dict[str, Any]:
-    """Stop the current timer.
+    """Stop the current timer and cleanup the poller.
 
     Args:
         session_id: opencode session id, OPTIONAL for agentic invocation -> use empty string
@@ -188,11 +313,40 @@ def stop(session_id: str) -> Dict[str, Any]:
     Returns:
         Confirmation message
     """
+    import os, signal
 
     TIMER_FILE = access_timer_file(session_id)
+    PID_FILE = access_pid_file(session_id)
 
+    stopped = False
+
+    # Kill the poller process if it exists
+    if PID_FILE.exists():
+        try:
+            pid = int(PID_FILE.read_text().strip())
+            if pid and pid != os.getpid():
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass  # Process already dead
+        except (ValueError, OSError):
+            pass  # Invalid PID or can't kill
+        finally:
+            try:
+                PID_FILE.unlink()
+                stopped = True
+            except OSError:
+                pass
+
+    # Remove timer file
     if TIMER_FILE.exists():
-        TIMER_FILE.unlink()
+        try:
+            TIMER_FILE.unlink()
+            stopped = True
+        except OSError:
+            pass
+
+    if stopped:
         return {"status": "stopped", "message": "🛑 Timer stopped"}
 
     return {"status": "idle", "message": "No active timer"}
@@ -211,13 +365,13 @@ def pause(session_id: str) -> Dict[str, Any]:
         return {"status": "idle", "message": "No active timer"}
 
     timer = Timer.model_validate_json(TIMER_FILE.read_text())
-    current_time = (time.time())
+    current_time = time.time()
     remaining = timer.data.end_time - current_time
 
     timer.data.status = "paused"
     timer.data.remaining = remaining
 
-    TIMER_FILE.write_text(json.dumps(timer.data))
+    TIMER_FILE.write_text(timer.model_dump_json(indent=2))
 
     return {
         "status": "paused",
@@ -244,12 +398,12 @@ def resume(session_id: str) -> Dict[str, Any]:
     if timer.data.status != "paused":
         return {"status": timer.data.status, "message": "Timer is not paused"}
 
-    current_time = (time.time())
-    remaining = timer.data.get("remaining", 0)
+    current_time = time.time()
+    remaining = getattr(timer.data, "remaining", 0)
     timer.data.end_time = current_time + remaining
     timer.data.status = "running"
 
-    TIMER_FILE.write_text(json.dumps(timer.data))
+    TIMER_FILE.write_text(timer.model_dump_json(indent=2))
 
     return {
         "status": "running",
@@ -261,5 +415,15 @@ def resume(session_id: str) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     import fire
+    from types import SimpleNamespace
 
-    fire.Fire()
+    fire.Fire(
+        SimpleNamespace(
+            start=start,
+            status=status,
+            resume=resume,
+            stop=stop,
+            pause=pause,
+            status_poller=status_poller,
+        )
+    )
