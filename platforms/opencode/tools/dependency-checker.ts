@@ -1,6 +1,6 @@
 import { tool } from "@opencode-ai/plugin"
- import path from "path"
- import fs from "fs"
+import path from "path"
+import fs from "fs"
 
 function resolveScriptPath(worktree) {
   const rel = "core/tools/dependency-checker/script.py"
@@ -17,7 +17,7 @@ function resolveScriptPath(worktree) {
   return direct
 }
 
-export default tool({
+export const analyze_dependencies = tool({
   description: "Analyze project dependencies.",
   args: {
     project_path: tool.schema.string().describe("Path to the project root directory"),
@@ -28,7 +28,8 @@ export default tool({
   async execute(args, context) {
     const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${k}=${JSON.stringify(v)}`])
+    // No context-injected parameters
     const result = await Bun.$`python3 ${script} analyze_dependencies ${argList}`.text()
     return result.trim()
   }
-  })
+})
