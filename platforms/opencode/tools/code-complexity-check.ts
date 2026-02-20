@@ -1,9 +1,9 @@
 import { tool } from "@opencode-ai/plugin"
- import path from "path"
- import fs from "fs"
+import path from "path"
+import fs from "fs"
 
 function resolveScriptPath(worktree) {
-  const rel = "core/tools/pomodoro-timer/script.py"
+  const rel = "core/tools/code-complexity-check/script.py"
   const direct = path.join(worktree, rel)
   if (fs.existsSync(direct)) return direct
   // If this repo is a submodule, the agent-workspace may be in a subdirectory.
@@ -17,18 +17,18 @@ function resolveScriptPath(worktree) {
   return direct
 }
 
-export default tool({
-  description: "Check the status of the current timer.",
+export const analyze = tool({
+  description: "Calculate cyclomatic complexity and other metrics for code files.",
   args: {
-    on_finish: tool.schema.any().describe("Callable, called when timer has finished")
+    file_path: tool.schema.string().describe("Path to the code file to analyze"),
+    threshold: tool.schema.number().int().default(10).describe("Complexity threshold (functions above this are flagged, default: 10)"),
+    language: tool.schema.string().default("auto").describe("Programming language (python, javascript, typescript, auto for auto-detect)")
   },
   async execute(args, context) {
     const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${k}=${JSON.stringify(v)}`])
-    if (context.sessionID !== undefined) {
-      argList.push(`--session_id=${JSON.stringify(context.sessionID)}`)
-    }
-    const result = await Bun.$`python3 ${script} status ${argList}`.text()
+    // No context-injected parameters
+    const result = await Bun.$`python3 ${script} analyze ${argList}`.text()
     return result.trim()
   }
-  })
+})

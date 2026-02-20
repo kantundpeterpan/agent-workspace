@@ -1,9 +1,9 @@
 import { tool } from "@opencode-ai/plugin"
- import path from "path"
- import fs from "fs"
+import path from "path"
+import fs from "fs"
 
 function resolveScriptPath(worktree) {
-  const rel = "core/tools/code-complexity-check/script.py"
+  const rel = "core/tools/dependency-checker/script.py"
   const direct = path.join(worktree, rel)
   if (fs.existsSync(direct)) return direct
   // If this repo is a submodule, the agent-workspace may be in a subdirectory.
@@ -17,18 +17,19 @@ function resolveScriptPath(worktree) {
   return direct
 }
 
-export default tool({
-  description: "Calculate cyclomatic complexity and other metrics for code files.",
+export const analyze_dependencies = tool({
+  description: "Analyze project dependencies.",
   args: {
-    file_path: tool.schema.string().describe("Path to the code file to analyze"),
-    threshold: tool.schema.number().int().default(10).describe("Complexity threshold (functions above this are flagged, default: 10)"),
-    language: tool.schema.string().default("auto").describe("Programming language (python, javascript, typescript, auto for auto-detect)")
+    project_path: tool.schema.string().describe("Path to the project root directory"),
+    check_security: tool.schema.boolean().default(true).describe("Whether to check for security vulnerabilities"),
+    check_outdated: tool.schema.boolean().default(true).describe("Whether to check for outdated packages"),
+    severity_threshold: tool.schema.string().default("moderate").describe("Minimum severity level to report (low, moderate, high, critical)")
   },
   async execute(args, context) {
     const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${k}=${JSON.stringify(v)}`])
     // No context-injected parameters
-    const result = await Bun.$`python3 ${script} analyze ${argList}`.text()
+    const result = await Bun.$`python3 ${script} analyze_dependencies ${argList}`.text()
     return result.trim()
   }
-  })
+})
