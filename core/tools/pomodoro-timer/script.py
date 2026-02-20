@@ -425,5 +425,6 @@ if __name__ == "__main__":
             stop=stop,
             pause=pause,
             status_poller=status_poller,
+            notify_opencode=notify_opencode
         )
     )
