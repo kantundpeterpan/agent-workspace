@@ -28,6 +28,7 @@ export default tool({
   async execute(args, context) {
     const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${k}=${JSON.stringify(v)}`])
+    // No context-injected parameters
     const result = await Bun.$`python3 ${script} analyze_dependencies ${argList}`.text()
     return result.trim()
   }

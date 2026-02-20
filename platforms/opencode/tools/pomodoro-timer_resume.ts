@@ -20,11 +20,14 @@ function resolveScriptPath(worktree) {
 export default tool({
   description: "Resume a paused timer.",
   args: {
-
+    // No user-provided arguments - all parameters injected from context
   },
   async execute(args, context) {
     const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${k}=${JSON.stringify(v)}`])
+    if (context.sessionID !== undefined) {
+      argList.push(`--session_id=${JSON.stringify(context.sessionID)}`)
+    }
     const result = await Bun.$`python3 ${script} resume ${argList}`.text()
     return result.trim()
   }

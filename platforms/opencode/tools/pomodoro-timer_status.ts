@@ -20,11 +20,14 @@ function resolveScriptPath(worktree) {
 export default tool({
   description: "Check the status of the current timer.",
   args: {
-
+    on_finish: tool.schema.any().describe("Callable, called when timer has finished")
   },
   async execute(args, context) {
     const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${k}=${JSON.stringify(v)}`])
+    if (context.sessionID !== undefined) {
+      argList.push(`--session_id=${JSON.stringify(context.sessionID)}`)
+    }
     const result = await Bun.$`python3 ${script} status ${argList}`.text()
     return result.trim()
   }

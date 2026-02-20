@@ -20,12 +20,15 @@ function resolveScriptPath(worktree) {
 export default tool({
   description: "Start a new pomodoro timer.",
   args: {
-    duration: tool.schema.number().int().default(25).describe("Duration in minutes (default: 25)"),
+    duration: tool.schema.number().default(25).describe("Duration in minutes (default: 25, accepts float)"),
     phase: tool.schema.string().default("implement").describe("Session phase label (brainstorm, plan, implement, review, break)")
   },
   async execute(args, context) {
     const script = resolveScriptPath(context.worktree)
     const argList = Object.entries(args).flatMap(([k, v]) => [`--${k}=${JSON.stringify(v)}`])
+    if (context.sessionID !== undefined) {
+      argList.push(`--session_id=${JSON.stringify(context.sessionID)}`)
+    }
     const result = await Bun.$`python3 ${script} start ${argList}`.text()
     return result.trim()
   }
