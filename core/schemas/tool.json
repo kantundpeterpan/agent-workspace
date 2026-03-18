@@ -3,7 +3,7 @@
   "title": "Custom Tool Schema",
   "description": "Schema for validating custom tool definitions",
   "type": "object",
-  "required": ["name", "description", "schema", "implementation"],
+  "required": ["name", "description", "schema", "implementation", "exports"],
   "properties": {
     "name": {
       "type": "string",
@@ -13,6 +13,32 @@
     "description": {
       "type": "string",
       "description": "What this tool does"
+    },
+    "exports": {
+      "type": "array",
+      "description": "List of module exports (functions or objects) the tool exposes to the platform",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "object"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "description": "Export name exposed to the runtime/CLI"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["function", "object"],
+            "description": "Export kind"
+          },
+          "object": {
+            "type": "string",
+            "description": "Name of the object or function in the implementation module"
+          },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
     },
     "schema": {
       "type": "object",
@@ -38,6 +64,43 @@
           "type": "string",
           "description": "Entry point script filename"
         }
+      }
+    }
+    ,
+    "platform": {
+      "type": "object",
+      "description": "Platform-specific configuration (e.g. opencode).\nAllows configuring mappings between tool parameters and platform/context variables.",
+      "properties": {
+        "opencode": {
+          "type": "object",
+          "description": "Opencode-specific configuration",
+          "properties": {
+        "contextMapping": {
+              "type": "object",
+              "description": "Map of Opencode context variable names to tool parameter names.\nKeys must be one of the known Opencode context variables: `agent`, `sessionID`, `messageID`, `directory`, `worktree`. Values are the corresponding tool parameter names (strings).",
+              "properties": {
+                "agent": { "type": "string", "description": "Tool parameter name to bind to the opencode agent context variable" },
+                "sessionID": { "type": "string", "description": "Tool parameter name to bind to the opencode sessionID context variable" },
+                "messageID": { "type": "string", "description": "Tool parameter name to bind to the opencode messageID context variable" },
+                "directory": { "type": "string", "description": "Tool parameter name to bind to the opencode directory context variable" },
+                "worktree": { "type": "string", "description": "Tool parameter name to bind to the opencode worktree context variable" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": {
+        "type": "object",
+        "description": "Other platform-specific configuration objects.\nEach platform object may include a `contextMapping` object with string values mapping parameter names to context variables.",
+        "properties": {
+          "contextMapping": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
       }
     }
   }

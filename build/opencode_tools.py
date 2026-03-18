@@ -253,10 +253,10 @@ class OpenCodeToolTranspiler:
         self.type_extractor = PythonTypeExtractor()
         self.zod_converter = ZodSchemaConverter()
 
-    def transpile_tool(self, tool_dir: Path, tool_yaml: Dict) -> Dict[str, str]:
+    def transpile_tool(self, tool_dir: Path, tool_yaml: Dict) -> tuple[str, str]:
         """
-        Transpile a tool directory to TypeScript files.
-        Returns: {filename: content}
+        Transpile a tool directory to a single TypeScript file.
+        Returns: (filename, content) where filename is "{tool_name}.ts"
         """
         script_path = tool_dir / tool_yaml["implementation"]["entry"]
         tool_name = tool_yaml["name"]
@@ -271,39 +271,65 @@ class OpenCodeToolTranspiler:
         if not exports:
             exports = self._auto_discover_exports(signatures)
 
-        # Generate TypeScript for each export
-        ts_files = {}
+        # Extract context mapping from tool.yaml (platform.opencode.contextMapping)
+        context_mapping = {}
+        platform_config = tool_yaml.get("platform", {})
+        opencode_config = platform_config.get("opencode", {})
+        if opencode_config and "contextMapping" in opencode_config:
+            context_mapping = opencode_config["contextMapping"]
+
+        # Known OpenCode context variables
+        known_context_vars = {
+            "agent",
+            "sessionID",
+            "messageID",
+            "directory",
+            "worktree",
+        }
+
+        # Generate tool definitions for each export
+        tool_definitions = []
 
         for export in exports:
             if export["type"] == "function":
                 sig = signatures.get(export["object"])
                 if sig:
-                    ts_content = self._generate_function_tool(
-                        tool_name, export["name"], sig, script_path, tool_dir
+                    tool_def = self._generate_function_tool_def(
+                        tool_name,
+                        export["name"],
+                        sig,
+                        script_path,
+                        tool_dir,
+                        context_mapping,
+                        known_context_vars,
                     )
-                    # Place TypeScript files directly in the tools/ folder, prefix
-                    # filenames with the tool name to avoid collisions.
-                    filename = f"{tool_name}_{export['name']}.ts"
-                    ts_files[filename] = ts_content
+                    tool_definitions.append((export["name"], tool_def))
 
             elif export["type"] == "class":
                 class_name = export["object"]
                 for method in export.get("methods", []):
                     sig = signatures.get(f"{class_name}.{method}")
                     if sig:
-                        ts_content = self._generate_method_tool(
+                        tool_def = self._generate_method_tool_def(
                             tool_name,
                             export["name"],
                             method,
                             sig,
                             script_path,
                             tool_dir,
+                            context_mapping,
+                            known_context_vars,
                         )
-                        # Prefix with tool name and include method to avoid collisions
-                        filename = f"{tool_name}_{export['name']}_{method}.ts"
-                        ts_files[filename] = ts_content
+                        tool_definitions.append(
+                            (f"{export['name']}_{method}", tool_def)
+                        )
 
-        return ts_files
+        # Combine all tool definitions into a single file
+        ts_content = self._generate_tool_file(
+            tool_name, tool_dir, script_path, tool_definitions
+        )
+
+        return (f"{tool_name}.ts", ts_content)
 
     def _auto_discover_exports(
         self, signatures: Dict[str, FunctionSignature]
@@ -315,35 +341,182 @@ class OpenCodeToolTranspiler:
                 exports.append({"name": name, "type": "function", "object": name})
         return exports
 
-    def _generate_function_tool(
+    def _generate_function_tool_def(
         self,
         tool_name: str,
         export_name: str,
         sig: FunctionSignature,
         script_path: Path,
         tool_dir: Path,
+        context_mapping: Dict[str, str],
+        known_context_vars: set,
     ) -> str:
-        """Generate TypeScript tool for a function export."""
+        """Generate TypeScript tool definition for a function export (returns just the tool object, not full file)."""
 
-        # Build args dict
-        args_lines = []
+        # Separate parameters into user args and context-injected args
+        user_params = []
+        context_injected_params = []  # List of (param_name, context_var)
+
         for param in sig.parameters:
+            # Check if this parameter has an explicit mapping
+            context_var = None
+            for ctx_var, tool_param in context_mapping.items():
+                if tool_param == param.name:
+                    context_var = ctx_var
+                    break
+
+            # Check for exact name match if no explicit mapping
+            if context_var is None and param.name in known_context_vars:
+                context_var = param.name
+
+            if context_var:
+                context_injected_params.append((param.name, context_var))
+            else:
+                user_params.append(param)
+
+        # Build args dict (only user-provided params)
+        args_lines = []
+        for param in user_params:
             zod_type = self.zod_converter.convert(param.type_hint, param.default)
             line = f"    {param.name}: {zod_type}"
             if param.description:
                 line += f'.describe("{param.description}")'
             args_lines.append(line)
 
-        args_str = ",\n".join(args_lines)
+        args_str = (
+            ",\n".join(args_lines)
+            if args_lines
+            else "    // No user-provided arguments - all parameters injected from context"
+        )
+
+        # Build context injection code
+        context_injection_lines = []
+        for param_name, context_var in context_injected_params:
+            context_injection_lines.append(
+                f"    if (context.{context_var} !== undefined) {{"
+            )
+            context_injection_lines.append(
+                f"      argList.push(`--{param_name}=${{JSON.stringify(context.{context_var})}}`)"
+            )
+            context_injection_lines.append(f"    }}")
+        context_injection_code = (
+            "\n".join(context_injection_lines)
+            if context_injection_lines
+            else "    // No context-injected parameters"
+        )
+
+        return f'''export const {export_name} = tool({{
+  description: "{sig.description}",
+  args: {{
+{args_str}
+  }},
+  async execute(args, context) {{
+    const script = resolveScriptPath(context.worktree)
+    const argList = Object.entries(args).flatMap(([k, v]) => [`--${{k}}=${{JSON.stringify(v)}}`])
+{context_injection_code}
+    const result = await Bun.$`python3 ${{script}} {export_name} ${{argList}}`.text()
+    return result.trim()
+  }}
+}})'''
+
+    def _generate_method_tool_def(
+        self,
+        tool_name: str,
+        class_name: str,
+        method_name: str,
+        sig: FunctionSignature,
+        script_path: Path,
+        tool_dir: Path,
+        context_mapping: Dict[str, str],
+        known_context_vars: set,
+    ) -> str:
+        """Generate TypeScript tool definition for a class method (returns just the tool object, not full file)."""
+
+        # Separate parameters into user args and context-injected args
+        user_params = []
+        context_injected_params = []  # List of (param_name, context_var)
+
+        for param in sig.parameters:
+            # Check if this parameter has an explicit mapping
+            context_var = None
+            for ctx_var, tool_param in context_mapping.items():
+                if tool_param == param.name:
+                    context_var = ctx_var
+                    break
+
+            # Check for exact name match if no explicit mapping
+            if context_var is None and param.name in known_context_vars:
+                context_var = param.name
+
+            if context_var:
+                context_injected_params.append((param.name, context_var))
+            else:
+                user_params.append(param)
+
+        # Build args dict (only user-provided params)
+        args_lines = []
+        for param in user_params:
+            zod_type = self.zod_converter.convert(param.type_hint, param.default)
+            line = f"    {param.name}: {zod_type}"
+            if param.description:
+                line += f'.describe("{param.description}")'
+            args_lines.append(line)
+
+        args_str = (
+            ",\n".join(args_lines)
+            if args_lines
+            else "    // No user-provided arguments - all parameters injected from context"
+        )
+
+        # Build context injection code
+        context_injection_lines = []
+        for param_name, context_var in context_injected_params:
+            context_injection_lines.append(
+                f"    if (context.{context_var} !== undefined) {{"
+            )
+            context_injection_lines.append(
+                f"      argList.push(`--{param_name}=${{JSON.stringify(context.{context_var})}}`)"
+            )
+            context_injection_lines.append(f"    }}")
+        context_injection_code = (
+            "\n".join(context_injection_lines)
+            if context_injection_lines
+            else "    // No context-injected parameters"
+        )
+
+        export_name = f"{class_name}_{method_name}"
+
+        return f'''export const {export_name} = tool({{
+  description: "{sig.description}",
+  args: {{
+{args_str}
+  }},
+  async execute(args, context) {{
+    const script = resolveScriptPath(context.worktree)
+    const argList = Object.entries(args).flatMap(([k, v]) => [`--${{k}}=${{JSON.stringify(v)}}`])
+{context_injection_code}
+    const result = await Bun.$`python3 ${{script}} {class_name} {method_name} ${{argList}}`.text()
+    return result.trim()
+  }}
+}})'''
+
+    def _generate_tool_file(
+        self,
+        tool_name: str,
+        tool_dir: Path,
+        script_path: Path,
+        tool_definitions: List[tuple[str, str]],
+    ) -> str:
+        """Combine all tool definitions into a single TypeScript file."""
 
         # Calculate relative path from workspace root to the Python script
-        # Python sources remain in core/tools and are read at runtime from there.
         script_name = script_path.name
         rel_script_path = f"core/tools/{tool_dir.name}/{script_name}"
 
-        return f'''import {{ tool }} from "@opencode-ai/plugin"
- import path from "path"
- import fs from "fs"
+        # Generate imports and helper function
+        header = f'''import {{ tool }} from "@opencode-ai/plugin"
+import path from "path"
+import fs from "fs"
 
 function resolveScriptPath(worktree) {{
   const rel = "{rel_script_path}"
@@ -360,75 +533,12 @@ function resolveScriptPath(worktree) {{
   return direct
 }}
 
-export default tool({{
-  description: "{sig.description}",
-  args: {{
-{args_str}
-  }},
-  async execute(args, context) {{
-    const script = resolveScriptPath(context.worktree)
-    const argList = Object.entries(args).flatMap(([k, v]) => [`--${{k}}=${{JSON.stringify(v)}}`])
-    const result = await Bun.$`python3 ${{script}} {export_name} ${{argList}}`.text()
-    return result.trim()
-  }}
-  }})'''
+'''
 
-    def _generate_method_tool(
-        self,
-        tool_name: str,
-        class_name: str,
-        method_name: str,
-        sig: FunctionSignature,
-        script_path: Path,
-        tool_dir: Path,
-    ) -> str:
-        """Generate TypeScript tool for a class method."""
+        # Combine all tool definitions with blank lines between them
+        definitions_str = "\n\n".join([tool_def for _, tool_def in tool_definitions])
 
-        # Build args dict
-        args_lines = []
-        for param in sig.parameters:
-            zod_type = self.zod_converter.convert(param.type_hint, param.default)
-            line = f"    {param.name}: {zod_type}"
-            if param.description:
-                line += f'.describe("{param.description}")'
-            args_lines.append(line)
-
-        args_str = ",\n".join(args_lines)
-
-        # Calculate relative path from workspace root to the Python script
-        # Python sources remain in core/tools and are read at runtime from there.
-        script_name = script_path.name
-        rel_script_path = f"core/tools/{tool_dir.name}/{script_name}"
-
-        return f'''import {{ tool }} from "@opencode-ai/plugin"
- import path from "path"
- import fs from "fs"
-
-function resolveScriptPath(worktree) {{
-  const rel = "{rel_script_path}"
-  const direct = path.join(worktree, rel)
-  if (fs.existsSync(direct)) return direct
-  try {{
-    for (const entry of fs.readdirSync(worktree)) {{
-      const candidate = path.join(worktree, entry, rel)
-      if (fs.existsSync(candidate)) return candidate
-    }}
-  }} catch (e) {{}}
-  return direct
-}}
-
-export default tool({{
-  description: "{sig.description}",
-  args: {{
-{args_str}
-  }},
-  async execute(args, context) {{
-    const script = resolveScriptPath(context.worktree)
-    const argList = Object.entries(args).flatMap(([k, v]) => [`--${{k}}=${{JSON.stringify(v)}}`])
-    const result = await Bun.$`python3 ${{script}} {class_name} {method_name} ${{argList}}`.text()
-    return result.trim()
-  }}
-  }})'''
+        return header + definitions_str
 
 
 def generate_opencode_tools(core_path: Path, output_path: Path) -> bool:
@@ -464,14 +574,13 @@ def generate_opencode_tools(core_path: Path, output_path: Path) -> bool:
             tool_name = tool_yaml.get("name", tool_dir.name)
             print(f"  🔧 Transpiling tool: {tool_name}")
 
-            ts_files = transpiler.transpile_tool(tool_dir, tool_yaml)
+            filename, content = transpiler.transpile_tool(tool_dir, tool_yaml)
 
-            # Write TypeScript files directly into the tools/ output folder
-            for filename, content in ts_files.items():
-                output_file = output_tools_path / filename
-                with open(output_file, "w") as f:
-                    f.write(content)
-                print(f"    ✅ Generated {filename}")
+            # Write TypeScript file directly into the tools/ output folder
+            output_file = output_tools_path / filename
+            with open(output_file, "w") as f:
+                f.write(content)
+            print(f"    ✅ Generated {filename}")
 
             # Do NOT copy Python sources into the output. Python implementations
             # remain under core/tools and are referenced from the generated
