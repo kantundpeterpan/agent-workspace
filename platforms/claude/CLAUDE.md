@@ -1,5 +1,90 @@
 # Agent Workspace for Claude Code
 
+## code-reviewer
+
+**Description:** Performs thorough code reviews focusing on correctness, security, performance, and maintainability
+
+You are an expert code reviewer with deep knowledge of software engineering best practices.
+
+Your review focuses on:
+1. Correctness - Does the code work as intended?
+2. Security - Are there vulnerabilities?
+3. Performance - Any obvious bottlenecks?
+4. Maintainability - Is the code readable and well-structured?
+5. Testing - Is there adequate coverage?
+
+Review approach:
+- First understand the context and purpose
+- Review architecture and design decisions
+- Check for correctness and edge cases
+- Identify security issues
+- Assess performance implications
+- Evaluate readability and maintainability
+
+Feedback style:
+- Be specific and actionable
+- Explain the reasoning behind suggestions
+- Balance critical feedback with positive notes
+- Prioritize issues by severity
+- Suggest concrete improvements
+
+You have access to complexity analysis tools to help identify complex code.
+
+
+
+### Available Skills
+
+- code-review
+
+
+
+### MCP Servers
+
+- git
+
+
+
+## feature-orchestrator
+
+**Description:** Orchestrates the planning and implementation of new features from backlog to completion
+
+You are a senior software architect and developer who excels at planning and implementing features.
+
+Your workflow:
+1. Discovery - Check for existing backlog/features file
+2. Selection - Help choose which feature to work on
+3. Analysis - Understand requirements and technical approach
+4. Planning - Create technical plan with task breakdown
+5. Branching - Set up isolated development environment
+6. Implementation - Build the feature incrementally
+7. Review - Ensure quality through code review practices
+
+Best practices:
+- Always clarify requirements before starting
+- Break work into small, testable increments
+- Use git worktrees for feature isolation
+- Update documentation as you go
+- Write tests for new functionality
+- Commit frequently with clear messages
+
+
+
+### Available Skills
+
+- code-review
+
+- testing
+
+
+
+### MCP Servers
+
+- github
+
+- git
+
+
+
 ## pair-programmer
 
 **Description:** Interactive pair programming partner focused on learning through structured collaboration and timed coding rounds
@@ -204,91 +289,6 @@ Notes / Clarifications:
 
 
 
-## feature-orchestrator
-
-**Description:** Orchestrates the planning and implementation of new features from backlog to completion
-
-You are a senior software architect and developer who excels at planning and implementing features.
-
-Your workflow:
-1. Discovery - Check for existing backlog/features file
-2. Selection - Help choose which feature to work on
-3. Analysis - Understand requirements and technical approach
-4. Planning - Create technical plan with task breakdown
-5. Branching - Set up isolated development environment
-6. Implementation - Build the feature incrementally
-7. Review - Ensure quality through code review practices
-
-Best practices:
-- Always clarify requirements before starting
-- Break work into small, testable increments
-- Use git worktrees for feature isolation
-- Update documentation as you go
-- Write tests for new functionality
-- Commit frequently with clear messages
-
-
-
-### Available Skills
-
-- code-review
-
-- testing
-
-
-
-### MCP Servers
-
-- github
-
-- git
-
-
-
-## code-reviewer
-
-**Description:** Performs thorough code reviews focusing on correctness, security, performance, and maintainability
-
-You are an expert code reviewer with deep knowledge of software engineering best practices.
-
-Your review focuses on:
-1. Correctness - Does the code work as intended?
-2. Security - Are there vulnerabilities?
-3. Performance - Any obvious bottlenecks?
-4. Maintainability - Is the code readable and well-structured?
-5. Testing - Is there adequate coverage?
-
-Review approach:
-- First understand the context and purpose
-- Review architecture and design decisions
-- Check for correctness and edge cases
-- Identify security issues
-- Assess performance implications
-- Evaluate readability and maintainability
-
-Feedback style:
-- Be specific and actionable
-- Explain the reasoning behind suggestions
-- Balance critical feedback with positive notes
-- Prioritize issues by severity
-- Suggest concrete improvements
-
-You have access to complexity analysis tools to help identify complex code.
-
-
-
-### Available Skills
-
-- code-review
-
-
-
-### MCP Servers
-
-- git
-
-
-
 ## Slash Commands
 
 - `/commit-wo-untracked`: commit current changes w/o untracked files
@@ -304,6 +304,174 @@ You have access to complexity analysis tools to help identify complex code.
 
 
 ## Rules
+
+### style/typescript
+
+
+
+# Rule: TypeScript Standards
+
+Follow TypeScript best practices for type safety, readability, and maintainability.
+
+## Type Safety
+
+**Always Use Types:**
+```typescript
+// BAD
+function process(data) {
+  return data.map(x => x.value);
+}
+
+// GOOD
+interface DataItem {
+  value: string;
+}
+
+function process(data: DataItem[]): string[] {
+  return data.map(x => x.value);
+}
+```
+
+**Avoid `any`:**
+```typescript
+// BAD
+function parse(input: any): any {
+  return JSON.parse(input);
+}
+
+// GOOD
+function parse<T>(input: string): T {
+  return JSON.parse(input);
+}
+```
+
+**Use Strict Null Checks:**
+```typescript
+// BAD
+function getUser(id: number): User {
+  return database.findUser(id); // Might be undefined
+}
+
+// GOOD
+function getUser(id: number): User | undefined {
+  return database.findUser(id);
+}
+
+// Or throw if required
+function getUserOrThrow(id: number): User {
+  const user = database.findUser(id);
+  if (!user) throw new Error(`User ${id} not found`);
+  return user;
+}
+```
+
+## Naming Conventions
+
+**Types/Interfaces:** PascalCase
+```typescript
+interface UserProfile {
+  firstName: string;
+}
+
+type UserStatus = 'active' | 'inactive';
+```
+
+**Functions/Variables:** camelCase
+```typescript
+const userName = 'John';
+function getUserName(): string {
+  return userName;
+}
+```
+
+**Constants:** UPPER_SNAKE_CASE
+```typescript
+const MAX_RETRY_COUNT = 3;
+const API_BASE_URL = 'https://api.example.com';
+```
+
+**Enums:** PascalCase for name, PascalCase for members
+```typescript
+enum UserRole {
+  Admin = 'ADMIN',
+  User = 'USER',
+  Guest = 'GUEST'
+}
+```
+
+## Code Organization
+
+**Prefer Interfaces over Type Aliases for Objects:**
+```typescript
+// GOOD
+interface User {
+  id: number;
+  name: string;
+}
+
+// Acceptable for unions
+type Status = 'active' | 'inactive';
+```
+
+**Use Readonly for Immutable Data:**
+```typescript
+interface Config {
+  readonly apiKey: string;
+  readonly timeout: number;
+}
+```
+
+**Explicit Return Types for Public APIs:**
+```typescript
+// GOOD
+export function calculateTotal(items: Item[]): number {
+  return items.reduce((sum, item) => sum + item.price, 0);
+}
+```
+
+## Error Handling
+
+**Use Discriminated Unions for Errors:**
+```typescript
+type Result<T> = 
+  | { success: true; data: T }
+  | { success: false; error: string };
+
+function process(): Result<Data> {
+  try {
+    const data = doSomething();
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+```
+
+**Never Ignore Promises:**
+```typescript
+// BAD
+async function init() {
+  loadData(); // Promise ignored
+}
+
+// GOOD
+async function init() {
+  await loadData();
+}
+```
+
+## Review Checklist
+
+- [ ] Functions have explicit return types
+- [ ] No implicit `any` types
+- [ ] Proper null/undefined handling
+- [ ] Readonly used where appropriate
+- [ ] Naming conventions followed
+- [ ] Interfaces preferred over type aliases for objects
+- [ ] Error handling is explicit
+- [ ] Promises are properly awaited
+
+
 
 ### security/no-secrets
 
@@ -539,174 +707,6 @@ Guidelines for designing, implementing, and reviewing microservices-based system
 - [ ] Proper error handling and retries
 - [ ] Health checks implemented
 - [ ] Observability (logs, metrics, traces)
-
-
-
-### style/typescript
-
-
-
-# Rule: TypeScript Standards
-
-Follow TypeScript best practices for type safety, readability, and maintainability.
-
-## Type Safety
-
-**Always Use Types:**
-```typescript
-// BAD
-function process(data) {
-  return data.map(x => x.value);
-}
-
-// GOOD
-interface DataItem {
-  value: string;
-}
-
-function process(data: DataItem[]): string[] {
-  return data.map(x => x.value);
-}
-```
-
-**Avoid `any`:**
-```typescript
-// BAD
-function parse(input: any): any {
-  return JSON.parse(input);
-}
-
-// GOOD
-function parse<T>(input: string): T {
-  return JSON.parse(input);
-}
-```
-
-**Use Strict Null Checks:**
-```typescript
-// BAD
-function getUser(id: number): User {
-  return database.findUser(id); // Might be undefined
-}
-
-// GOOD
-function getUser(id: number): User | undefined {
-  return database.findUser(id);
-}
-
-// Or throw if required
-function getUserOrThrow(id: number): User {
-  const user = database.findUser(id);
-  if (!user) throw new Error(`User ${id} not found`);
-  return user;
-}
-```
-
-## Naming Conventions
-
-**Types/Interfaces:** PascalCase
-```typescript
-interface UserProfile {
-  firstName: string;
-}
-
-type UserStatus = 'active' | 'inactive';
-```
-
-**Functions/Variables:** camelCase
-```typescript
-const userName = 'John';
-function getUserName(): string {
-  return userName;
-}
-```
-
-**Constants:** UPPER_SNAKE_CASE
-```typescript
-const MAX_RETRY_COUNT = 3;
-const API_BASE_URL = 'https://api.example.com';
-```
-
-**Enums:** PascalCase for name, PascalCase for members
-```typescript
-enum UserRole {
-  Admin = 'ADMIN',
-  User = 'USER',
-  Guest = 'GUEST'
-}
-```
-
-## Code Organization
-
-**Prefer Interfaces over Type Aliases for Objects:**
-```typescript
-// GOOD
-interface User {
-  id: number;
-  name: string;
-}
-
-// Acceptable for unions
-type Status = 'active' | 'inactive';
-```
-
-**Use Readonly for Immutable Data:**
-```typescript
-interface Config {
-  readonly apiKey: string;
-  readonly timeout: number;
-}
-```
-
-**Explicit Return Types for Public APIs:**
-```typescript
-// GOOD
-export function calculateTotal(items: Item[]): number {
-  return items.reduce((sum, item) => sum + item.price, 0);
-}
-```
-
-## Error Handling
-
-**Use Discriminated Unions for Errors:**
-```typescript
-type Result<T> = 
-  | { success: true; data: T }
-  | { success: false; error: string };
-
-function process(): Result<Data> {
-  try {
-    const data = doSomething();
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
-```
-
-**Never Ignore Promises:**
-```typescript
-// BAD
-async function init() {
-  loadData(); // Promise ignored
-}
-
-// GOOD
-async function init() {
-  await loadData();
-}
-```
-
-## Review Checklist
-
-- [ ] Functions have explicit return types
-- [ ] No implicit `any` types
-- [ ] Proper null/undefined handling
-- [ ] Readonly used where appropriate
-- [ ] Naming conventions followed
-- [ ] Interfaces preferred over type aliases for objects
-- [ ] Error handling is explicit
-- [ ] Promises are properly awaited
 
 
 
