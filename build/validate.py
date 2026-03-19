@@ -112,6 +112,13 @@ def validate_agent(agent_path: Path) -> List[str]:
     return validate_yaml_file(agent_path, schema)
 
 
+def validate_command(command_path: Path) -> List[str]:
+    """Validate a command YAML file."""
+    schema_path = Path(__file__).parent.parent / "core" / "schemas" / "command.json"
+    schema = load_schema(str(schema_path))
+    return validate_yaml_file(command_path, schema)
+
+
 def validate_mcp_server(server_path: Path) -> List[str]:
     """Validate an MCP server JSON file."""
     errors = []
@@ -237,6 +244,20 @@ def validate_all(core_path: Path) -> bool:
                         print(f"     - {error}")
                 else:
                     print(f"  ✅ {tool_dir.name}")
+
+    # Validate commands
+    print("\n⌨️  Validating slash commands...")
+    commands_path = core_path / "commands"
+    if commands_path.exists():
+        for command_file in commands_path.glob("*.yaml"):
+            errors = validate_command(command_file)
+            if errors:
+                all_valid = False
+                print(f"  ❌ {command_file.stem}:")
+                for error in errors:
+                    print(f"     - {error}")
+            else:
+                print(f"  ✅ {command_file.stem}")
 
     print()
     if all_valid:

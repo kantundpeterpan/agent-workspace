@@ -1,0 +1,4 @@
+name: "commit-wo-untracked"
+description: "commit current changes w/o untracked files"
+prompt: |
+  Commit recent changes with an informative commit message, keep untracked files untouched

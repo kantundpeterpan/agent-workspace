@@ -73,6 +73,12 @@ def load_rule(rule_path: Path) -> str:
         return f.read()
 
 
+def load_command(command_path: Path) -> Dict:
+    """Load a command definition."""
+    with open(command_path) as f:
+        return yaml.safe_load(f)
+
+
 def generate_opencode_config(core_path: Path, output_path: Path) -> Dict:
     """Generate OpenCode configuration."""
     config = {
@@ -102,7 +108,37 @@ def generate_opencode_config(core_path: Path, output_path: Path) -> Dict:
             _generate_opencode_agent_markdown(agent_data, name, output_path)
             # Agents are now standalone Markdown files and NOT included in opencode.json
 
+    # Load commands
+    commands_path = core_path / "commands"
+    if commands_path.exists():
+        generate_opencode_commands(core_path, output_path)
+
     return config
+
+
+def generate_opencode_commands(core_path: Path, output_path: Path) -> None:
+    """Generate OpenCode modular command files."""
+    commands_dir = output_path / "commands"
+    commands_dir.mkdir(parents=True, exist_ok=True)
+
+    commands_path = core_path / "commands"
+    for command_file in commands_path.glob("*.yaml"):
+        command_data = load_command(command_file)
+        name = command_data.get("name", command_file.stem)
+
+        # Build frontmatter
+        frontmatter = {
+            "description": command_data.get("description", ""),
+        }
+
+        # Generate content with YAML frontmatter
+        fm_str = yaml.dump(frontmatter, sort_keys=False, default_flow_style=False)
+        content = f"---\n{fm_str}---\n\n{command_data.get('prompt', '')}"
+
+        output_file = commands_dir / f"{name}.md"
+        with open(output_file, "w") as f:
+            f.write(content)
+        print(f"    ✅ Generated command: {name}")
 
 
 def _normalize_mcp_server(server: Dict) -> Dict:
@@ -302,7 +338,7 @@ def generate_continue_config(core_path: Path) -> Dict:
     return config
 
 
-def generate_claude_config(core_path: Path) -> str:
+def generate_claude_config(core_path: Path, output_path: Path) -> str:
     """Generate Claude Code CLAUDE.md."""
     sections = ["# Agent Workspace for Claude Code\n"]
 
@@ -339,6 +375,20 @@ def generate_claude_config(core_path: Path) -> str:
                     sections.append(f"- {server}\n")
                 sections.append("\n")
 
+    # Add slash commands summary
+    commands_path = core_path / "commands"
+    if commands_path.exists():
+        sections.append("## Slash Commands\n")
+        for command_file in sorted(commands_path.glob("*.yaml")):
+            command = load_command(command_file)
+            name = command.get("name", command_file.stem)
+            desc = command.get("description", "")
+            sections.append(f"- `/{name}`: {desc}\n")
+        sections.append("\n")
+
+        # Also generate modular command files
+        generate_claude_commands(core_path, output_path)
+
     # Add rules
     rules_path = core_path / "rules"
     if rules_path.exists():
@@ -358,6 +408,32 @@ def generate_claude_config(core_path: Path) -> str:
                             sections.append("\n")
 
     return "\n".join(sections)
+
+
+def generate_claude_commands(core_path: Path, output_path: Path) -> None:
+    """Generate Claude Code modular command files."""
+    commands_dir = output_path / ".claude" / "commands"
+    commands_dir.mkdir(parents=True, exist_ok=True)
+
+    commands_path = core_path / "commands"
+    for command_file in commands_path.glob("*.yaml"):
+        command_data = load_command(command_file)
+        name = command_data.get("name", command_file.stem)
+
+        # Build frontmatter
+        frontmatter = {
+            "description": command_data.get("description", ""),
+            "argument-hint": "$ARGUMENTS",
+        }
+
+        # Generate content with YAML frontmatter
+        fm_str = yaml.dump(frontmatter, sort_keys=False, default_flow_style=False)
+        content = f"---\n{fm_str}---\n\n{command_data.get('prompt', '')}"
+
+        output_file = commands_dir / f"{name}.md"
+        with open(output_file, "w") as f:
+            f.write(content)
+        print(f"    ✅ Generated Claude command: {name}")
 
 
 def copy_skills(core_path: Path, output_path: Path) -> None:
@@ -508,7 +584,7 @@ def transpile(target: str, core_path: Path, output_path: Path) -> bool:
             copy_skills(core_path, output_path)
 
         elif target == "claude":
-            config = generate_claude_config(core_path)
+            config = generate_claude_config(core_path, output_path)
             with open(output_path / "CLAUDE.md", "w") as f:
                 f.write(config)
             print(f"  ✅ Generated CLAUDE.md")
