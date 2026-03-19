@@ -70,9 +70,16 @@
       "type": "object",
       "description": "Tool permissions for this agent",
       "additionalProperties": {
-        "anyOf": [
+        "oneOf": [
           { "type": "boolean" },
-          { "type": "string", "enum": ["allow", "deny"] }
+          { "type": "string", "enum": ["allow", "deny", "ask"] },
+          {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": ["allow", "deny", "ask"]
+            }
+          }
         ]
       }
     },

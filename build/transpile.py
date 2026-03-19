@@ -19,6 +19,18 @@ from jsonschema import validators
 from opencode_tools import generate_opencode_tools
 
 
+# OpenCode built-in tool name mapping
+OPENCODE_TOOL_NAME_MAP = {
+    "Read": "read",
+    "Write": "edit",
+    "Edit": "edit",
+    "Grep": "grep",
+    "Bash": "bash",
+    "Glob": "glob",
+    "List": "list",
+}
+
+
 def load_agent(agent_path: Path) -> Dict:
     """Load an agent definition."""
     with open(agent_path) as f:
@@ -92,18 +104,11 @@ def generate_opencode_config(core_path: Path) -> Dict:
                 "model": f"{agent['model']['provider']}/{agent['model']['model']}",
             }
 
-            # Add tools configuration
+            # Add permissions configuration
             if "tools" in agent:
-                tools = {}
-                for tool_name, permission in agent["tools"].items():
-                    # preserve original semantics in core, we'll coerce later to schema
-                    if permission == "allow" or permission is True:
-                        tools[tool_name] = True
-                    elif permission == "ask":
-                        tools[tool_name] = "ask"
-                    elif permission == "deny" or permission is False:
-                        tools[tool_name] = False
-                opencode_agent["tools"] = tools
+                opencode_agent["permission"] = _map_to_opencode_permissions(
+                    agent["tools"]
+                )
 
             # Add system prompt reference
             if "system_prompt" in agent:
@@ -140,27 +145,42 @@ def _normalize_mcp_server(server: Dict) -> Dict:
     return {k: v for k, v in server.items() if k in allowed}
 
 
-def _coerce_agent_tools(tools: Dict) -> Tuple[Dict, List[str]]:
-    """Coerce agent tool permissions to schema-compatible booleans.
+def _map_to_opencode_permissions(tools: Dict) -> Dict:
+    """Map core tool permissions to OpenCode-specific permission structure.
 
-    Returns the coerced tools dict and a list of warning messages for changes made.
+    Maps built-in tool names (e.g. 'Read' to 'read') and ensures values
+    are OpenCode schema compliant ('allow', 'ask', 'deny').
     """
-    warnings: List[str] = []
-    out: Dict = {}
+    out = {}
     for k, v in (tools or {}).items():
-        if v is True or v == "allow":
-            out[k] = True
+        # Map tool name if it's a known built-in
+        mapped_key = OPENCODE_TOOL_NAME_MAP.get(k, k)
+
+        if isinstance(v, dict):
+            # Granular command/object permissions
+            out[mapped_key] = {
+                ik: (
+                    "allow"
+                    if iv is True or iv == "allow"
+                    else "deny"
+                    if iv is False or iv == "deny"
+                    else "ask"
+                    if iv == "ask"
+                    else "deny"
+                )
+                for ik, iv in v.items()
+            }
+        elif v is True or v == "allow":
+            out[mapped_key] = "allow"
         elif v is False or v == "deny":
-            out[k] = False
+            out[mapped_key] = "deny"
         elif v == "ask":
-            # Schema doesn't support 'ask' tri-state; conservatively deny and warn
-            out[k] = False
-            warnings.append(f"Tool '{k}': 'ask' coerced to false (deny).")
+            out[mapped_key] = "ask"
         else:
-            # Unknown type: try truthiness
-            out[k] = bool(v)
-            warnings.append(f"Tool '{k}': coerced value {v!r} -> {out[k]!r}.")
-    return out, warnings
+            # Fallback for unknown types
+            out[mapped_key] = "allow" if bool(v) else "deny"
+
+    return out
 
 
 def normalize_config_for_schema(config: Dict) -> List[str]:
@@ -185,12 +205,11 @@ def normalize_config_for_schema(config: Dict) -> List[str]:
     for name, agent in agents.items():
         if not isinstance(agent, dict):
             continue
-        tools = agent.get("tools")
-        if tools is not None:
-            coerced, w = _coerce_agent_tools(tools)
-            if w:
-                warnings.extend([f"agent.{name}: {msg}" for msg in w])
-            agent["tools"] = coerced
+
+        # Remove 'tools' field if present (deprecated in favor of 'permission')
+        if "tools" in agent:
+            del agent["tools"]
+            warnings.append(f"agent.{name}: removed deprecated 'tools' field.")
 
     return warnings
 

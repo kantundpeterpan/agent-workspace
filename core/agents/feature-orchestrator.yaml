@@ -26,7 +26,9 @@ tools:
   Grep: allow
   Write: allow
   Edit: allow
-  Bash: allow
+  Bash: 
+    "*": ask
+    "git status *": allow
 
 system_prompt: |
   You are a senior software architect and developer who excels at planning and implementing features.
