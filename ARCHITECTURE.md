@@ -151,6 +151,30 @@ model:
 - `core/mcp-servers/` → Mentioned as available MCPs
 - `core/rules/` → Inline in system prompt
 
+## Platform Feature Matrix
+
+| Feature | OpenCode | Continue.dev | Claude Code |
+| :--- | :--- | :--- | :--- |
+| **Agent Format** | Individual `.md` files in `agents/` with YAML frontmatter | Entries in `prompts` array in `config.yaml` | Dedicated sections in monolithic `CLAUDE.md` |
+| **MCP Servers** | Full JSON config in `opencode.json` | `mcpServers` array; remote servers use `curl` shim | Reference list (no direct configuration) |
+| **Skills** | Extracted from `SKILL.md` frontmatter, copied to `skills/` | Copied to `skills/`, used via `uses: file://` | Included as instructional sections |
+| **Permissions** | Granular (allow/ask/deny) for tools, skills, and MCP | Implicit based on configuration | List of available capabilities |
+| **Rules** | Referenced in agent configs | Added to `rules` array | Inlined directly in `CLAUDE.md` |
+| **Custom Tools**| Full transpilation to JSON tools | Limited (manual inclusion required) | N/A (instructions provided) |
+
+## Permissions Model Divergence
+
+OpenCode is the primary target for the new granular permission model. Core definitions support `allow`, `ask`, and `deny` states, which are mapped differently:
+
+1. **OpenCode**: 
+   - Consolidates `tools`, `skills`, and `mcp_servers` into a single `permission` object in agent frontmatter.
+   - Tool names are normalized (e.g., `Read` -> `read`).
+   - MCP servers use wildcard patterns (e.g., `github_*`) or specific tool overrides (e.g., `github_create_issue`).
+2. **Continue.dev**: 
+   - Permissions are largely implicit. If an MCP server is defined, it is available.
+3. **Claude Code**: 
+   - Permissions are treated as instructional guidance within the `CLAUDE.md` file.
+
 ## Schema Validation
 
 All core files are validated against JSON schemas:

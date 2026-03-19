@@ -92,11 +92,13 @@ model:
 
 skills:
   - skill-name-1
-  - skill-name-2
+  - skill-name-2: ask   # Optional: granular permission
 
 mcp_servers:
-  - github
-  - git
+  github: allow        # Optional: granular permission
+  git:                 # Optional: tool-specific overrides
+    "*": ask
+    status: allow
 
 rules:
   - security/no-secrets
