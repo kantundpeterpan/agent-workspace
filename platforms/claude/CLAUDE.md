@@ -301,6 +301,8 @@ Notes / Clarifications:
 
 - `/test`: Generate unit tests for the selected code
 
+- `/write-plan-to-md`: Write the current plan to file
+
 
 
 ## Rules
