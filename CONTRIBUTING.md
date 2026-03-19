@@ -123,9 +123,40 @@ All skills, MCP servers, and rules referenced must exist in `core/`.
 ```bash
 python build/validate.py core/agents/{agent-name}.yaml
 python build/transpile.py --target opencode --input core/ --output test-output/
+
+## Adding a Slash Command
+
+Slash commands are prompt templates triggered via `/name`.
+
+### 1. Create Command YAML
+
+Add a YAML file to `core/commands/`:
+
+```bash
+touch core/commands/{command-name}.yaml
 ```
 
+```yaml
+name: {command-name}
+description: Short description for help menu
+prompt: |
+  Your detailed prompt template here.
+  Use $ARGUMENTS for user input.
+```
+
+### 2. Transpile
+
+Commands are transpiled to platform-specific modular files:
+
+```bash
+python build/transpile.py --target all --input core/ --output test-output/
+```
+
+- **OpenCode**: Generated as `.opencode/commands/{name}.md`
+- **Claude Code**: Generated as `.claude/commands/{name}.md`
+
 ## Adding an MCP Server
+
 
 ### 1. Create MCP Server JSON
 

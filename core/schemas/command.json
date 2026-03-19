@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Command Definition Schema",
+  "description": "Schema for validating slash command YAML definitions",
+  "type": "object",
+  "required": ["name", "description", "prompt"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique identifier for the slash command (used as /name)",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "description": {
+      "type": "string",
+      "description": "What this slash command does",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "prompt": {
+      "type": "string",
+      "description": "The prompt to be executed when the slash command is used"
+    }
+  },
+  "additionalProperties": false
+}

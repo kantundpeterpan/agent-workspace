@@ -5,13 +5,13 @@
 The Agent Workspace uses a transpilation architecture where tool-agnostic definitions in `core/` are transformed into platform-specific configurations in `platforms/`.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      CORE/                               │
-│  ┌──────────┐  ┌──────────┐  ┌──────────────┐          │
-│  │  Skills  │  │  Agents  │  │ MCP Servers  │          │
-│  │ SKILL.md │  │  YAML    │  │   JSON       │          │
-│  └──────────┘  └──────────┘  └──────────────┘          │
-└────────────────────────┬────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          CORE/                                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌──────────────┐         │
+│  │  Skills  │  │  Agents  │  │ MCP Servers  │  │  Commands    │         │
+│  │ SKILL.md │  │  YAML    │  │   JSON       │  │   YAML       │         │
+│  └──────────┘  └──────────┘  └──────────────┘  └──────────────┘         │
+└────────────────────────┬────────────────────────────────────────────────┘
                          │
               ┌──────────┴──────────┐
               │    Transpilation    │
@@ -65,6 +65,8 @@ Agent ──uses──> Skills
   └── configures ──> MCP Servers
   |
   └── applies ──> Rules
+
+Skill ──uses──> Commands (optional)
 ```
 
 The build pipeline validates:
@@ -84,6 +86,8 @@ Input: core/
   ├── mcp-servers/     ──────┤
   │                           │
   ├── tools/           ──────┤
+  │                           │
+  ├── commands/        ──────┤
   │                           │
   └── rules/           ──────┘
                               │
@@ -116,6 +120,7 @@ Input: core/
 - `core/mcp-servers/{name}.json` → `mcp.{name}` in `opencode.json`
 - `core/rules/{name}.md` → Referenced in agent configs
 - `core/tools/{name}/` → Tool definitions in `opencode.json`
+- `core/commands/{name}.yaml` → `.opencode/commands/{name}.md`
 
 **Key Mappings**:
 ```yaml
@@ -150,6 +155,7 @@ model:
 - `core/skills/{name}/` → Referenced in `CLAUDE.md`
 - `core/mcp-servers/` → Mentioned as available MCPs
 - `core/rules/` → Inline in system prompt
+- `core/commands/{name}.yaml` → `.claude/commands/{name}.md`
 
 ## Platform Feature Matrix
 
@@ -183,6 +189,7 @@ All core files are validated against JSON schemas:
 - `core/schemas/agent.json` - Agent YAML validation  
 - `core/schemas/mcp-server.json` - MCP server JSON validation
 - `core/schemas/tool.json` - Custom tool validation
+- `core/schemas/command.json` - Slash command validation
 
 ## Build Pipeline
 
