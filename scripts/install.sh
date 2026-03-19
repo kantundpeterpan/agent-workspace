@@ -44,6 +44,7 @@ echo "🔧 Setting up OpenCode..."
 if [ -d "$WORKSPACE_DIR/platforms/opencode" ]; then
     create_symlink "$WORKSPACE_DIR/platforms/opencode" "$PROJECT_ROOT/.agents"
     mkdir -p "$PROJECT_ROOT/.agents/skills"
+    mkdir -p "$PROJECT_ROOT/.agents/agents"
 else
     echo "  ⚠️  OpenCode platform not found"
 fi
@@ -53,6 +54,7 @@ echo "🔧 Setting up .opencode directory..."
 if [ -d "$WORKSPACE_DIR/platforms/opencode" ]; then
     create_symlink "$WORKSPACE_DIR/platforms/opencode" "$PROJECT_ROOT/.opencode"
     mkdir -p "$PROJECT_ROOT/.opencode/skills"
+    mkdir -p "$PROJECT_ROOT/.opencode/agents"
 else
     echo "  ⚠️  OpenCode platform not found"
 fi

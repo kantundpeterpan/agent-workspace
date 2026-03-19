@@ -2,8 +2,8 @@ name: issue-resolver
 description: Expert debugger that investigates and fixes GitHub issues systematically
 
 model:
-  provider: opencode
-  model: kimi-k2.5-free
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.5
 
 skills:

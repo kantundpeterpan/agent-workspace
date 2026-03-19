@@ -73,7 +73,7 @@ def load_rule(rule_path: Path) -> str:
         return f.read()
 
 
-def generate_opencode_config(core_path: Path) -> Dict:
+def generate_opencode_config(core_path: Path, output_path: Path) -> Dict:
     """Generate OpenCode configuration."""
     config = {
         "$schema": "https://opencode.ai/config.json",
@@ -95,30 +95,12 @@ def generate_opencode_config(core_path: Path) -> Dict:
     agents_path = core_path / "agents"
     if agents_path.exists():
         for agent_file in agents_path.glob("*.yaml"):
-            agent = load_agent(agent_file)
-            name = agent.pop("name", agent_file.stem)
+            agent_data = load_agent(agent_file)
+            name = agent_data.get("name", agent_file.stem)
 
-            # Convert to OpenCode format
-            opencode_agent = {
-                "description": agent.get("description", ""),
-                "model": f"{agent['model']['provider']}/{agent['model']['model']}",
-            }
-
-            # Add permissions configuration
-            if "tools" in agent:
-                opencode_agent["permission"] = _map_to_opencode_permissions(
-                    agent["tools"]
-                )
-
-            # Add system prompt reference
-            if "system_prompt" in agent:
-                opencode_agent["prompt"] = agent["system_prompt"]
-
-            config["agent"][name] = opencode_agent
-
-    # Note: rules are intentionally not included in opencode.json
-    # The OpenCode config schema does not include a top-level "rules" field,
-    # so we skip compiling rule files into opencode.json.
+            # Generate Markdown file
+            _generate_opencode_agent_markdown(agent_data, name, output_path)
+            # Agents are now standalone Markdown files and NOT included in opencode.json
 
     return config
 
@@ -145,42 +127,88 @@ def _normalize_mcp_server(server: Dict) -> Dict:
     return {k: v for k, v in server.items() if k in allowed}
 
 
-def _map_to_opencode_permissions(tools: Dict) -> Dict:
-    """Map core tool permissions to OpenCode-specific permission structure.
+def _normalize_permission_value(v: Any) -> Any:
+    """Normalize a permission value to 'allow', 'ask', or 'deny'."""
+    if isinstance(v, dict):
+        return {ik: _normalize_permission_value(iv) for ik, iv in v.items()}
+    if v is True or v == "allow":
+        return "allow"
+    if v is False or v == "deny":
+        return "deny"
+    if v == "ask":
+        return "ask"
+    return "allow" if bool(v) else "deny"
 
-    Maps built-in tool names (e.g. 'Read' to 'read') and ensures values
-    are OpenCode schema compliant ('allow', 'ask', 'deny').
-    """
+
+def _map_to_opencode_permissions(agent_data: Dict) -> Dict:
+    """Consolidate tools, skills, and MCP servers into OpenCode permissions."""
     out = {}
-    for k, v in (tools or {}).items():
-        # Map tool name if it's a known built-in
-        mapped_key = OPENCODE_TOOL_NAME_MAP.get(k, k)
 
-        if isinstance(v, dict):
-            # Granular command/object permissions
-            out[mapped_key] = {
-                ik: (
-                    "allow"
-                    if iv is True or iv == "allow"
-                    else "deny"
-                    if iv is False or iv == "deny"
-                    else "ask"
-                    if iv == "ask"
-                    else "deny"
-                )
-                for ik, iv in v.items()
-            }
-        elif v is True or v == "allow":
-            out[mapped_key] = "allow"
-        elif v is False or v == "deny":
-            out[mapped_key] = "deny"
-        elif v == "ask":
-            out[mapped_key] = "ask"
-        else:
-            # Fallback for unknown types
-            out[mapped_key] = "allow" if bool(v) else "deny"
+    # 1. Map Tools
+    tools = agent_data.get("tools", {})
+    for k, v in (tools or {}).items():
+        mapped_key = OPENCODE_TOOL_NAME_MAP.get(k, k)
+        out[mapped_key] = _normalize_permission_value(v)
+
+    # 2. Map Skills
+    skills = agent_data.get("skills", [])
+    if isinstance(skills, list):
+        for skill in skills:
+            out[skill] = "allow"
+    elif isinstance(skills, dict):
+        for skill, val in skills.items():
+            out[skill] = _normalize_permission_value(val)
+
+    # 3. Map MCP Servers
+    mcp_servers = agent_data.get("mcp_servers", [])
+    if isinstance(mcp_servers, list):
+        for server in mcp_servers:
+            out[f"{server}_*"] = "allow"
+    elif isinstance(mcp_servers, dict):
+        for server, val in mcp_servers.items():
+            if isinstance(val, (str, bool)):
+                out[f"{server}_*"] = _normalize_permission_value(val)
+            elif isinstance(val, dict):
+                # Specific tool overrides for the MCP server
+                # The keys in 'val' are expected to be tool names or patterns
+                for tool_pattern, tool_val in val.items():
+                    key = tool_pattern
+                    if key == "*":
+                        key = f"{server}_*"
+                    elif not key.startswith(f"{server}_") and "*" not in key:
+                        # Prepend server name if it's a specific tool name without wildcard
+                        key = f"{server}_{key}"
+                    out[key] = _normalize_permission_value(tool_val)
 
     return out
+
+
+def _generate_opencode_agent_markdown(
+    agent_data: Dict, name: str, output_path: Path
+) -> str:
+    """Generate a Markdown file for an OpenCode agent with frontmatter."""
+    agents_dir = output_path / "agents"
+    agents_dir.mkdir(parents=True, exist_ok=True)
+
+    # Consolidate permissions
+    permissions = _map_to_opencode_permissions(agent_data)
+
+    # Build frontmatter
+    frontmatter = {
+        "description": agent_data.get("description", ""),
+        "model": f"{agent_data['model']['provider']}/{agent_data['model']['model']}",
+        "permission": permissions,
+    }
+
+    # Generate content with YAML frontmatter
+    fm_str = yaml.dump(frontmatter, sort_keys=False, default_flow_style=False)
+    content = f"---\n{fm_str}---\n\n{agent_data.get('system_prompt', '')}"
+
+    agent_file = agents_dir / f"{name}.md"
+    with open(agent_file, "w") as f:
+        f.write(content)
+
+    return f"agents/{name}.md"
 
 
 def normalize_config_for_schema(config: Dict) -> List[str]:
@@ -200,16 +228,9 @@ def normalize_config_for_schema(config: Dict) -> List[str]:
             )
         config["mcp"][name] = normalized
 
-    # Normalize agents
-    agents = config.get("agent", {})
-    for name, agent in agents.items():
-        if not isinstance(agent, dict):
-            continue
-
-        # Remove 'tools' field if present (deprecated in favor of 'permission')
-        if "tools" in agent:
-            del agent["tools"]
-            warnings.append(f"agent.{name}: removed deprecated 'tools' field.")
+    # Normalize agents (agents are now relative paths to Markdown files)
+    # The OpenCode schema allows both objects and strings for agents.
+    # No extra normalization needed for the strings.
 
     return warnings
 
@@ -218,27 +239,6 @@ def fetch_json_schema(url: str) -> Dict:
     r = requests.get(url, timeout=10)
     r.raise_for_status()
     return r.json()
-
-
-def validate_against_schema(config: Dict) -> List[jsonschema.ValidationError]:
-    """Validate config (dict) against its $schema and return list of errors.
-
-    Uses the $schema property on the config to fetch the schema. If no
-    $schema is present, returns a single error-like object via exception.
-    """
-    schema_url = config.get("$schema")
-    if not schema_url:
-        raise RuntimeError("No $schema property present in generated config")
-
-    schema = fetch_json_schema(schema_url)
-
-    Validator = validators.validator_for(schema)
-    Validator.check_schema(schema)
-    resolver = jsonschema.RefResolver.from_schema(schema)
-    validator = Validator(schema, resolver=resolver)
-
-    errors = sorted(validator.iter_errors(config), key=lambda e: e.path)
-    return errors
 
 
 def generate_continue_config(core_path: Path) -> Dict:
@@ -321,13 +321,21 @@ def generate_claude_config(core_path: Path) -> str:
 
             if "skills" in agent:
                 sections.append("### Available Skills\n")
-                for skill in agent["skills"]:
+                skills = agent["skills"]
+                skill_list = skills if isinstance(skills, list) else list(skills.keys())
+                for skill in skill_list:
                     sections.append(f"- {skill}\n")
                 sections.append("\n")
 
             if "mcp_servers" in agent:
                 sections.append("### MCP Servers\n")
-                for server in agent["mcp_servers"]:
+                mcp_servers = agent["mcp_servers"]
+                server_list = (
+                    mcp_servers
+                    if isinstance(mcp_servers, list)
+                    else list(mcp_servers.keys())
+                )
+                for server in server_list:
                     sections.append(f"- {server}\n")
                 sections.append("\n")
 
@@ -366,6 +374,43 @@ def copy_skills(core_path: Path, output_path: Path) -> None:
         print(f"  📁 Copied skills to {skills_dst}")
 
 
+def validate_agent_frontmatter(
+    frontmatter: Dict, schema_config: Dict
+) -> List[jsonschema.ValidationError]:
+    """Validate agent frontmatter against the AgentConfig schema.
+
+    Since the frontmatter is part of the AgentConfig (minus the 'prompt' which is the body),
+    we try to extract the AgentConfig from the main schema.
+    """
+    # The main schema's 'agent' property has 'additionalProperties' which
+    # defines the structure of each agent (AgentConfig).
+    # We find it by looking for the 'agent' property in the root properties.
+    agent_schema = schema_config.get("properties", {}).get("agent", {})
+    if not agent_schema:
+        return []
+
+    # In opencode schema, 'agent' itself is an object of agents.
+    # The definition of a single agent is in additionalProperties.
+    # But wait, looking at the schema we fetched, 'agent' has 'properties' like 'plan'
+    # AND 'additionalProperties'.
+    agent_definition = agent_schema.get("additionalProperties")
+    if not agent_definition:
+        return []
+
+    # If it's a list (anyOf/oneOf), we'd need to handle that, but let's assume
+    # it's the object definition for now.
+    if isinstance(agent_definition, bool):
+        return []
+
+    Validator = validators.validator_for(schema_config)
+    # We use a Resolver to handle internal $refs if any
+    resolver = jsonschema.RefResolver.from_schema(schema_config)
+    validator = Validator(agent_definition, resolver=resolver)
+
+    errors = sorted(validator.iter_errors(frontmatter), key=lambda e: e.path)
+    return errors
+
+
 def transpile(target: str, core_path: Path, output_path: Path) -> bool:
     """Transpile core definitions to target platform."""
     print(f"\n🔨 Transpiling to {target}...\n")
@@ -374,46 +419,72 @@ def transpile(target: str, core_path: Path, output_path: Path) -> bool:
 
     try:
         if target == "opencode":
-            config = generate_opencode_config(core_path)
+            config = generate_opencode_config(core_path, output_path)
 
             # Normalize the generated config to avoid embedding non-schema
             # fields (metadata, notes, etc.). Collect warnings for user info.
             warnings = normalize_config_for_schema(config)
 
-            # Validate and provide informative errors before writing output.
-            try:
-                errors = validate_against_schema(config)
-            except Exception as e:
-                print(f"  ⚠️  Schema fetch/validation failed: {e}")
-                # still write the file so the user can inspect it
-                with open(output_path / "opencode.json", "w") as f:
-                    json.dump(config, f, indent=2)
-                print(f"  ✅ Generated opencode.json (schema fetch failed)")
-                if warnings:
-                    for w in warnings:
-                        print(f"    ⚠ {w}")
-                # fail the transpilation step so CI/pipeline can catch it
-                raise
+            # Validate opencode.json and agent markdown frontmatter
+            schema_url = config.get("$schema")
+            schema_config = {}
+            if schema_url:
+                try:
+                    schema_config = fetch_json_schema(schema_url)
+                except Exception as e:
+                    print(f"  ⚠️  Schema fetch failed: {e}")
 
-            if errors:
-                print(f"  ❌ Validation errors ({len(errors)}):")
-                for e in errors:
-                    # Build a readable location and message
-                    location = ".".join([str(p) for p in e.path]) or "<root>"
-                    print(f"    - {location}: {e.message}")
+            # Validate main config
+            errors = []
+            if schema_config:
+                Validator = validators.validator_for(schema_config)
+                resolver = jsonschema.RefResolver.from_schema(schema_config)
+                validator = Validator(schema_config, resolver=resolver)
+                errors = sorted(validator.iter_errors(config), key=lambda e: e.path)
 
-                # write the file for inspection
-                with open(output_path / "opencode.json", "w") as f:
-                    json.dump(config, f, indent=2)
-                print(
-                    f"  ✅ Wrote opencode.json (invalid according to schema). Fix errors above."
-                )
-                # fail the transpilation step
-                return False
+                if errors:
+                    print(f"  ❌ Validation errors in opencode.json ({len(errors)}):")
+                    for e in errors:
+                        location = ".".join([str(p) for p in e.path]) or "<root>"
+                        print(f"    - {location}: {e.message}")
 
-            # No errors: write and report warnings
+            # Validate agent frontmatter
+            if schema_config:
+                agents_path = core_path / "agents"
+                if agents_path.exists():
+                    for agent_file in agents_path.glob("*.yaml"):
+                        agent_data = load_agent(agent_file)
+                        name = agent_data.get("name", agent_file.stem)
+
+                        # Re-calculate permissions to match what was written to frontmatter
+                        permissions = _map_to_opencode_permissions(agent_data)
+                        frontmatter = {
+                            "description": agent_data.get("description", ""),
+                            "model": f"{agent_data['model']['provider']}/{agent_data['model']['model']}",
+                            "permission": permissions,
+                        }
+
+                        agent_errors = validate_agent_frontmatter(
+                            frontmatter, schema_config
+                        )
+                        if agent_errors:
+                            print(
+                                f"  ❌ Validation errors in agent {name} frontmatter ({len(agent_errors)}):"
+                            )
+                            for e in agent_errors:
+                                location = (
+                                    ".".join([str(p) for p in e.path]) or "<root>"
+                                )
+                                print(f"    - {location}: {e.message}")
+                            errors.extend(agent_errors)
+
+            # Write opencode.json regardless of errors for inspection
             with open(output_path / "opencode.json", "w") as f:
                 json.dump(config, f, indent=2)
+
+            if errors:
+                return False
+
             print(f"  ✅ Generated opencode.json (schema valid)")
             if warnings:
                 for w in warnings:

@@ -43,20 +43,52 @@
       }
     },
     "skills": {
-      "type": "array",
-      "description": "Skills this agent can use",
-      "items": {
-        "type": "string",
-        "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-      }
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "Skills this agent can use",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+          }
+        },
+        {
+          "type": "object",
+          "description": "Granular skill permissions for this agent",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["allow", "deny", "ask"]
+          }
+        }
+      ]
     },
     "mcp_servers": {
-      "type": "array",
-      "description": "MCP servers available to this agent",
-      "items": {
-        "type": "string",
-        "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-      }
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "MCP servers available to this agent",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+          }
+        },
+        {
+          "type": "object",
+          "description": "Granular MCP server permissions for this agent",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string", "enum": ["allow", "deny", "ask"] },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": ["allow", "deny", "ask"]
+                }
+              }
+            ]
+          }
+        }
+      ]
     },
     "rules": {
       "type": "array",
