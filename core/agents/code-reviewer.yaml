@@ -2,8 +2,8 @@ name: code-reviewer
 description: Performs thorough code reviews focusing on correctness, security, performance, and maintainability
 
 model:
-  provider: opencode
-  model: kimi-k2.5-free
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.5
 
 skills:

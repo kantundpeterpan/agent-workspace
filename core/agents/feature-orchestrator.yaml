@@ -2,17 +2,19 @@ name: feature-orchestrator
 description: Orchestrates the planning and implementation of new features from backlog to completion
 
 model:
-  provider: opencode
-  model: kimi-k2.5-free
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.5
 
 skills:
-  - code-review
-  - testing
+  code-review: allow
+  testing: ask
 
 mcp_servers:
-  - github
-  - git
+  github: allow
+  git:
+    "*": ask
+    "status": allow
 
 rules:
   - security/no-secrets
@@ -20,13 +22,13 @@ rules:
   - architecture/microservices
 
 tools:
-  github_*: allow
-  git_*: allow
   Read: allow
   Grep: allow
   Write: allow
   Edit: allow
-  Bash: allow
+  Bash: 
+    "*": ask
+    "git status *": allow
 
 system_prompt: |
   You are a senior software architect and developer who excels at planning and implementing features.
