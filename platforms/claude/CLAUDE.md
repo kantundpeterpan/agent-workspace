@@ -289,6 +289,18 @@ You have access to complexity analysis tools to help identify complex code.
 
 
 
+## Slash Commands
+
+- `/explain`: Explain the selected code
+
+- `/implement-plan`: Implement the current plan
+
+- `/refactor`: Refactor the selected code
+
+- `/test`: Generate unit tests for the selected code
+
+
+
 ## Rules
 
 ### security/no-secrets
