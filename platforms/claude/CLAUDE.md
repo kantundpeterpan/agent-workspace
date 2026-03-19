@@ -291,6 +291,8 @@ You have access to complexity analysis tools to help identify complex code.
 
 ## Slash Commands
 
+- `/commit-wo-untracked`: commit current changes w/o untracked files
+
 - `/explain`: Explain the selected code
 
 - `/implement-plan`: Implement the current plan
