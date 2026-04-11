@@ -2,8 +2,8 @@ name: bayesian-modeler
 description: Specifies probabilistic models in PyMC, runs MCMC sampling, diagnoses convergence (R-hat, ESS, trace plots),
   performs posterior predictive checks, and reports posteriors with HDI
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.1
 skills:
 - bayesian-inference

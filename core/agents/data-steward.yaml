@@ -2,8 +2,8 @@ name: data-steward
 description: Locates, downloads, profiles, and documents research datasets — generating data cards covering provenance, schema, quality, missingness, and ethical considerations
 
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.2
 
 skills:

@@ -1,8 +1,8 @@
 name: exam-coach
 description: Coaches students through exam preparation — generating practice questions, marking mock answers with feedback, identifying weak areas, and running timed exam simulations
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.4
 skills:
   - concept-explanation

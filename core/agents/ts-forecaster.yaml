@@ -2,8 +2,8 @@ name: ts-forecaster
 description: Analyses time series data — stationarity testing, decomposition, ACF/PACF, ARIMA/ETS model fitting, walk-forward
   validation, and probabilistic forecasting
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.1
 skills:
 - time-series-analysis

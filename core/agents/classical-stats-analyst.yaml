@@ -2,8 +2,8 @@ name: classical-stats-analyst
 description: Applies classical frequentist statistical tests — t-tests, ANOVA, chi-square, correlation, regression — with
   full assumption checking and APA-style reporting
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.1
 skills:
 - classical-statistics

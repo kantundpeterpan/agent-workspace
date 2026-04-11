@@ -1,8 +1,8 @@
 name: flashcard-generator
 description: Transforms lecture notes, textbook passages, and concept lists into high-quality Anki-compatible flashcards using spaced-repetition best practices
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.3
 skills:
   - flashcard-generation

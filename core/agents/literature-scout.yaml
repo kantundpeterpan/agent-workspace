@@ -2,8 +2,8 @@ name: literature-scout
 description: Searches academic databases for relevant papers, screens and extracts key information, identifies research gaps, and exports annotated bibliographies in BibTeX
 
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.3
 
 skills:

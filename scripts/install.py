@@ -549,12 +549,25 @@ def cmd_add(
     workspace: Path,
     project_root: Path,
     config_path: Path,
-    category: str,
+    category: Optional[str],
     names: List[str],
     dry_run: bool,
     no_symlinks: bool,
 ) -> None:
     """Add one or more items to the config and retranspile."""
+    available = _load_available_items(workspace)
+
+    # Prompt for category if missing
+    if not category:
+        category = questionary.select(
+            "Which category do you want to add to?",
+            choices=["agent", "skill", "command", "mcp", "scope"],
+            style=CUSTOM_STYLE,
+        ).ask()
+        if not category:
+            console.print("[yellow]Cancelled.[/]")
+            sys.exit(0)
+
     config_key = _CATEGORY_MAP.get(category.lower())
     if config_key is None:
         console.print(
@@ -563,15 +576,32 @@ def cmd_add(
         )
         sys.exit(1)
 
-    available = _load_available_items(workspace)
     avail_key = _AVAILABLE_KEY[config_key]
-    valid = set(available.get(avail_key, []))
+    valid = available.get(avail_key, [])
 
-    unknown = [n for n in names if n not in valid]
+    # Prompt for names if missing
+    if not names:
+        config = _load_config(config_path) or _default_config()
+        existing: List[str] = config.get(config_key) or []
+        choices = [n for n in valid if n not in existing]
+        if not choices:
+            console.print(f"[yellow]All available {config_key} are already in your config.[/]")
+            sys.exit(0)
+        names = questionary.checkbox(
+            f"Select {category}(s) to add:",
+            choices=sorted(choices),
+            style=CUSTOM_STYLE,
+        ).ask() or []
+        if not names:
+            console.print("[yellow]Nothing selected — cancelled.[/]")
+            sys.exit(0)
+
+    valid_set = set(valid)
+    unknown = [n for n in names if n not in valid_set]
     if unknown:
         console.print(
             f"[red]❌ Unknown {category}(s): {', '.join(unknown)}\n"
-            f"   Available: {', '.join(sorted(valid))}[/]"
+            f"   Available: {', '.join(sorted(valid_set))}[/]"
         )
         sys.exit(1)
 
@@ -580,7 +610,7 @@ def cmd_add(
         console.print(f"[yellow]⚠  No config found at {config_path} — creating a default one.[/]")
         config = _default_config()
 
-    existing: List[str] = config.get(config_key) or []
+    existing = config.get(config_key) or []
     added = []
     for name in names:
         if name not in existing:
@@ -609,12 +639,23 @@ def cmd_remove(
     workspace: Path,
     project_root: Path,
     config_path: Path,
-    category: str,
+    category: Optional[str],
     names: List[str],
     dry_run: bool,
     no_symlinks: bool,
 ) -> None:
     """Remove one or more items from the explicit config and retranspile."""
+    # Prompt for category if missing
+    if not category:
+        category = questionary.select(
+            "Which category do you want to remove from?",
+            choices=["agent", "skill", "command", "mcp", "scope"],
+            style=CUSTOM_STYLE,
+        ).ask()
+        if not category:
+            console.print("[yellow]Cancelled.[/]")
+            sys.exit(0)
+
     config_key = _CATEGORY_MAP.get(category.lower())
     if config_key is None:
         console.print(
@@ -627,6 +668,23 @@ def cmd_remove(
     if config is None:
         console.print(f"[red]❌ No config found at {config_path}. Nothing to remove.[/]")
         sys.exit(1)
+
+    # Prompt for names if missing
+    if not names:
+        explicit_items: List[str] = config.get(config_key) or []
+        if not explicit_items:
+            console.print(
+                f"[yellow]No explicit {config_key} in your config to remove.[/]"
+            )
+            sys.exit(0)
+        names = questionary.checkbox(
+            f"Select {category}(s) to remove:",
+            choices=sorted(explicit_items),
+            style=CUSTOM_STYLE,
+        ).ask() or []
+        if not names:
+            console.print("[yellow]Nothing selected — cancelled.[/]")
+            sys.exit(0)
 
     existing: List[str] = config.get(config_key) or []
     removed = []
@@ -696,8 +754,8 @@ def cmd_set(
     workspace: Path,
     project_root: Path,
     config_path: Path,
-    key: str,
-    value: str,
+    key: Optional[str],
+    value: Optional[str],
     dry_run: bool,
     no_symlinks: bool,
 ) -> None:
@@ -706,11 +764,35 @@ def cmd_set(
         "language": ["python", "r", "both"],
         "target":   ["opencode", "continue", "claude", "all"],
     }
+
+    # Prompt for key if missing
+    if not key:
+        key = questionary.select(
+            "Which setting do you want to change?",
+            choices=list(allowed.keys()),
+            style=CUSTOM_STYLE,
+        ).ask()
+        if not key:
+            console.print("[yellow]Cancelled.[/]")
+            sys.exit(0)
+
     if key not in allowed:
         console.print(
             f"[red]❌ Unknown key '{key}'. Settable keys: {', '.join(allowed)}[/]"
         )
         sys.exit(1)
+
+    # Prompt for value if missing
+    if not value:
+        value = questionary.select(
+            f"New value for '{key}':",
+            choices=allowed[key],
+            style=CUSTOM_STYLE,
+        ).ask()
+        if not value:
+            console.print("[yellow]Cancelled.[/]")
+            sys.exit(0)
+
     if value not in allowed[key]:
         console.print(
             f"[red]❌ Invalid value '{value}' for '{key}'. "
@@ -837,12 +919,13 @@ def main() -> None:
         "add", help="Add items to the active config and retranspile."
     )
     p_add.add_argument(
-        "category", metavar="CATEGORY",
-        help="Category to add to: agent, skill, command, mcp, scope.",
+        "category", nargs="?", default=None, metavar="CATEGORY",
+        help="Category to add to: agent, skill, command, mcp, scope. "
+             "Omit to be prompted interactively.",
     )
     p_add.add_argument(
-        "names", nargs="+", metavar="NAME",
-        help="Item name(s) to add.",
+        "names", nargs="*", metavar="NAME",
+        help="Item name(s) to add. Omit to be prompted interactively.",
     )
     p_add.add_argument(
         "--config", metavar="PATH", default=None,
@@ -858,12 +941,13 @@ def main() -> None:
         "remove", help="Remove items from the explicit config and retranspile."
     )
     p_remove.add_argument(
-        "category", metavar="CATEGORY",
-        help="Category to remove from: agent, skill, command, mcp, scope.",
+        "category", nargs="?", default=None, metavar="CATEGORY",
+        help="Category to remove from: agent, skill, command, mcp, scope. "
+             "Omit to be prompted interactively.",
     )
     p_remove.add_argument(
-        "names", nargs="+", metavar="NAME",
-        help="Item name(s) to remove.",
+        "names", nargs="*", metavar="NAME",
+        help="Item name(s) to remove. Omit to be prompted interactively.",
     )
     p_remove.add_argument(
         "--config", metavar="PATH", default=None,
@@ -892,12 +976,12 @@ def main() -> None:
         "set", help="Update a scalar setting (language, target) and retranspile."
     )
     p_set.add_argument(
-        "key", metavar="KEY",
-        help="Setting to change: language, target.",
+        "key", nargs="?", default=None, metavar="KEY",
+        help="Setting to change: language, target. Omit to be prompted interactively.",
     )
     p_set.add_argument(
-        "value", metavar="VALUE",
-        help="New value.",
+        "value", nargs="?", default=None, metavar="VALUE",
+        help="New value. Omit to be prompted interactively.",
     )
     p_set.add_argument(
         "--config", metavar="PATH", default=None,

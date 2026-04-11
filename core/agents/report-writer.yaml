@@ -2,8 +2,8 @@ name: report-writer
 description: Drafts and polishes academic and technical reports in LaTeX, Quarto, or Markdown — from outline to final document
   with tables, figures, and citations
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.3
 skills:
 - report-writing

@@ -2,8 +2,8 @@ name: stats-modeler
 description: Fits and diagnoses classical and generalised linear models, checks assumptions, interprets coefficients, and
   reports results in formal APA style
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.1
 skills:
 - statistical-inference

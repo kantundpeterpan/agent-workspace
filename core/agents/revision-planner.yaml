@@ -1,8 +1,8 @@
 name: revision-planner
 description: Builds personalised, evidence-based revision schedules from syllabi and exam dates, applying spaced repetition, interleaving, and retrieval-practice principles
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.3
 skills:
   - revision-planning

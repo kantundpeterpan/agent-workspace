@@ -2,8 +2,8 @@ name: reproducibility-guardian
 description: Audits projects for reproducibility issues — lockfiles, seeds, absolute paths, data provenance, pipeline automation — and produces a scored checklist with prioritised fixes
 
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.2
 
 skills:

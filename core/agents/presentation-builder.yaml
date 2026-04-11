@@ -2,8 +2,8 @@ name: presentation-builder
 description: Creates slide decks for academic and technical presentations in Beamer, Quarto reveal.js, or PowerPoint — with
   declarative titles, speaker notes, and consistent design
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.4
 skills:
 - presentation-generation

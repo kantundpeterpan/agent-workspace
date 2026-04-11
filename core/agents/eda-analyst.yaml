@@ -2,8 +2,8 @@ name: eda-analyst
 description: Performs systematic exploratory data analysis — distributions, correlations, outliers, missingness — and produces a written EDA report with publication-quality figures
 
 model:
-  provider: anthropic
-  model: claude-3-5-sonnet
+  provider: google
+  model: gemini-3-flash-preview
   temperature: 0.2
 
 skills:
