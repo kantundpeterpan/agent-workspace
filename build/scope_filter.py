@@ -286,12 +286,17 @@ def main() -> None:
     mcp_filter = filters["mcp_filter"]
     tool_filter = filters["tool_filter"]
 
-    # CLI explicit item lists are the highest-priority override.
-    # nargs="*"  -> None when flag absent, [] when flag present with no names.
+    # CLI explicit item lists are additive: they union with the scope-derived
+    # filter so that extra items supplement (not replace) scope defaults.
+    # nargs="*" gives None when the flag is absent, [] when present with no names.
     def _cli_override(current: Optional[Set[str]], cli_val: Optional[List[str]]) -> Optional[Set[str]]:
         if cli_val is None:
-            return current      # flag not supplied: keep resolved value
-        return set(cli_val)     # flag supplied (even if empty): override
+            return current          # flag not supplied: keep resolved value
+        if not cli_val:
+            return set()            # flag supplied with no names: install nothing
+        if current is None:
+            return set(cli_val)     # no scope filter: use CLI list as the filter
+        return current | set(cli_val)   # union: scope defaults + extra CLI items
 
     agent_filter   = _cli_override(agent_filter,   args.agents)
     skill_filter   = _cli_override(skill_filter,   args.skills)
