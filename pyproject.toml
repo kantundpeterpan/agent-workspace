@@ -46,7 +46,10 @@ Issues = "https://github.com/kantundpeterpan/agent-workspace/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["scripts*", "build*"]
+include = ["scripts*", "build*", "core*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.json", "*.md", "*.py", "*.sh", "*.js", "*.ts"]
+# Recursively bundle all data files inside the core package so that
+# pip-installed environments have agents, skills, commands, scopes, etc.
+"core" = ["**/*"]
