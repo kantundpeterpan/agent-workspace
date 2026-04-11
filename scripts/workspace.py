@@ -198,6 +198,7 @@ def _run_transpile(workspace: Path, config: Dict, dry_run: bool = False) -> bool
         ("skills",      "--skills"),
         ("commands",    "--commands"),
         ("mcp_servers", "--mcp-servers"),
+        ("tools",       "--tools"),
     ]:
         val = config.get(config_key)
         if val is not None:
@@ -591,6 +592,7 @@ def show_summary(config: Dict, available: Dict) -> None:
         ("Skills",      "skills"),
         ("Commands",    "commands"),
         ("MCP servers", "mcp_servers"),
+        ("Tools",       "tools"),
     ]:
         table.add_row(label, _fmt_filter(config.get(key)))
 
@@ -630,6 +632,7 @@ def cmd_status(workspace: Path, project_root: Path, config_path: Path) -> None:
         ("Skills", "skills"),
         ("Commands", "commands"),
         ("MCP servers", "mcp_servers"),
+        ("Tools", "tools"),
     ]:
         explicit: List[str] = config.get(config_key) or []
         via_scope: List[str] = sorted(scope_derived.get(config_key, set()) - set(explicit))
@@ -698,6 +701,7 @@ def cmd_list(
         ("Skills",      "skills",      "skills"),
         ("Commands",    "commands",    "commands"),
         ("MCP servers", "mcp_servers", "mcp_servers"),
+        ("Tools",       "tools",       "tools"),
     ]
 
     console.print()
@@ -723,7 +727,7 @@ def cmd_add(
     if not category:
         category = questionary.select(
             "Which category do you want to add to?",
-            choices=["agent", "skill", "command", "mcp", "scope"],
+            choices=["agent", "skill", "command", "mcp", "tool", "scope"],
             style=CUSTOM_STYLE,
         ).ask()
         if not category:
@@ -734,7 +738,7 @@ def cmd_add(
     if config_key is None:
         console.print(
             f"[red]❌ Unknown category '{category}'. "
-            f"Choose from: agent, skill, command, mcp, scope[/]"
+            f"Choose from: agent, skill, command, mcp, tool, scope[/]"
         )
         sys.exit(1)
 
@@ -811,7 +815,7 @@ def cmd_remove(
     if not category:
         category = questionary.select(
             "Which category do you want to remove from?",
-            choices=["agent", "skill", "command", "mcp", "scope"],
+            choices=["agent", "skill", "command", "mcp", "tool", "scope"],
             style=CUSTOM_STYLE,
         ).ask()
         if not category:
@@ -822,7 +826,7 @@ def cmd_remove(
     if config_key is None:
         console.print(
             f"[red]❌ Unknown category '{category}'. "
-            f"Choose from: agent, skill, command, mcp, scope[/]"
+            f"Choose from: agent, skill, command, mcp, tool, scope[/]"
         )
         sys.exit(1)
 

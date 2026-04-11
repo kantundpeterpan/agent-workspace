@@ -589,6 +589,7 @@ def transpile(
     command_filter: Optional[Set[str]] = None,
     skill_filter: Optional[Set[str]] = None,
     mcp_filter: Optional[Set[str]] = None,
+    tool_filter: Optional[Set[str]] = None,
     language: str = "python",
 ) -> bool:
     """Transpile core definitions to target platform."""
@@ -677,7 +678,7 @@ def transpile(
 
             # Generate custom tools
             print(f"  🔧 Generating custom tools...")
-            if not generate_opencode_tools(core_path, output_path):
+            if not generate_opencode_tools(core_path, output_path, tool_filter=tool_filter):
                 print(f"  ⚠️  Some tools failed to transpile")
 
             # Copy skills

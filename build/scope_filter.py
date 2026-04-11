@@ -131,6 +131,7 @@ def resolve_filters(
     skill_filter: Optional[Set[str]] = None
     command_filter: Optional[Set[str]] = None
     mcp_filter: Optional[Set[str]] = None
+    tool_filter: Optional[Set[str]] = None
     language = "python"
     target = "all"
 
@@ -145,6 +146,7 @@ def resolve_filters(
         skill_filter = set(merged["skills"]) if merged["skills"] else None
         command_filter = set(merged["commands"]) if merged["commands"] else None
         mcp_filter = set(merged["mcp_servers"]) if merged["mcp_servers"] else None
+        tool_filter = set(merged["custom_tools"]) if merged["custom_tools"] else None
 
     # 2. Apply explicit overrides from config
     #    None   → no change (absent from config)
@@ -156,7 +158,7 @@ def resolve_filters(
         if not items:
             return set()            # explicit empty: install nothing
         if current is None:
-            return set(items)       # no scope filter → use explicit list as the filter
+            return set(items)       # no scope filter -> use explicit list as the filter
         current.update(items)       # union with scope
         return current
 
@@ -165,6 +167,8 @@ def resolve_filters(
         skill_filter   = _apply(skill_filter,   config.get("skills"))
         command_filter = _apply(command_filter, config.get("commands"))
         mcp_filter     = _apply(mcp_filter,     config.get("mcp_servers"))
+        # config uses "tools" key; scope YAML uses "custom_tools"
+        tool_filter    = _apply(tool_filter,    config.get("tools") or config.get("custom_tools"))
 
         language = config.get("language", "python")
         target = config.get("target", "all")
@@ -176,12 +180,13 @@ def resolve_filters(
         target = target_override
 
     return {
-        "agent_filter": agent_filter,
-        "skill_filter": skill_filter,
+        "agent_filter":   agent_filter,
+        "skill_filter":   skill_filter,
         "command_filter": command_filter,
-        "mcp_filter": mcp_filter,
-        "language": language,
-        "target": target,
+        "mcp_filter":     mcp_filter,
+        "tool_filter":    tool_filter,
+        "language":       language,
+        "target":         target,
     }
 
 
@@ -213,6 +218,10 @@ def main() -> None:
     parser.add_argument(
         "--mcp-servers", nargs="*", metavar="SERVER", dest="mcp_servers",
         help="Explicit MCP-server list. Pass with no names to install none.",
+    )
+    parser.add_argument(
+        "--tools", nargs="*", metavar="TOOL", dest="tools",
+        help="Explicit custom-tool list. Pass with no names to install none.",
     )
     parser.add_argument(
         "--config", metavar="PATH",
@@ -270,9 +279,10 @@ def main() -> None:
     skill_filter = filters["skill_filter"]
     command_filter = filters["command_filter"]
     mcp_filter = filters["mcp_filter"]
+    tool_filter = filters["tool_filter"]
 
     # CLI explicit item lists are the highest-priority override.
-    # nargs="*"  → None when flag absent, [] when flag present with no names.
+    # nargs="*"  -> None when flag absent, [] when flag present with no names.
     def _cli_override(current: Optional[Set[str]], cli_val: Optional[List[str]]) -> Optional[Set[str]]:
         if cli_val is None:
             return current      # flag not supplied: keep resolved value
@@ -282,6 +292,7 @@ def main() -> None:
     skill_filter   = _cli_override(skill_filter,   args.skills)
     command_filter = _cli_override(command_filter, args.commands)
     mcp_filter     = _cli_override(mcp_filter,     args.mcp_servers)
+    tool_filter    = _cli_override(tool_filter,    args.tools)
 
     # Report what we're doing
     if args.scopes or (config and config.get("scopes")):
@@ -297,6 +308,8 @@ def main() -> None:
         print(f"   Skills  ({len(skill_filter)}): {', '.join(sorted(skill_filter))}")
     if command_filter is not None:
         print(f"   Commands({len(command_filter)}): {', '.join(sorted(command_filter))}")
+    if tool_filter is not None:
+        print(f"   Tools   ({len(tool_filter)}): {', '.join(sorted(tool_filter))}")
     print()
 
     # Expand target list
@@ -315,6 +328,7 @@ def main() -> None:
             command_filter=command_filter,
             skill_filter=skill_filter,
             mcp_filter=mcp_filter,
+            tool_filter=tool_filter,
             language=language,
         )
         if not success:

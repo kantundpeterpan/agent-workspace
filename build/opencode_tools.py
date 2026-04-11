@@ -7,7 +7,7 @@ Uses AST-based type extraction and generates Zod schemas.
 import ast
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional, Set, Union
 from dataclasses import dataclass, field
 
 
@@ -541,8 +541,19 @@ function resolveScriptPath(worktree) {{
         return header + definitions_str
 
 
-def generate_opencode_tools(core_path: Path, output_path: Path) -> bool:
-    """Generate OpenCode custom tools from Python implementations."""
+def generate_opencode_tools(
+    core_path: Path,
+    output_path: Path,
+    tool_filter: Optional[Set[str]] = None,
+) -> bool:
+    """Generate OpenCode custom tools from Python implementations.
+
+    Args:
+        core_path: Path to the core/ directory.
+        output_path: Platform output directory (e.g. platforms/opencode).
+        tool_filter: If not None, only tools whose directory name is in this
+                     set will be transpiled.  An empty set means no tools.
+    """
     workspace_root = core_path.parent  # agent-workspace root
     tools_path = core_path / "tools"
 
@@ -558,8 +569,12 @@ def generate_opencode_tools(core_path: Path, output_path: Path) -> bool:
     import yaml
 
     success = True
-    for tool_dir in tools_path.iterdir():
+    for tool_dir in sorted(tools_path.iterdir()):
         if not tool_dir.is_dir():
+            continue
+
+        if tool_filter is not None and tool_dir.name not in tool_filter:
+            print(f"  ⏭  Skipping tool (filtered out): {tool_dir.name}")
             continue
 
         tool_yaml_path = tool_dir / "tool.yaml"
