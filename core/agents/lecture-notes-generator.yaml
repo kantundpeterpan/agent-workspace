@@ -38,5 +38,8 @@ system_prompt: |
   Output format defaults to Obsidian-compatible Markdown with YAML front-matter.
   For Quarto output, include appropriate code chunks and cross-references.
 
-  Mathematical notation: italicise scalar variables (*n*, *p*), bold vectors (**x**),
-  use display equations for anything complex. Number equations that are referenced.
+  Mathematical notation: use LaTeX dollar notation for all mathematical expressions —
+  inline as `$...$` (e.g., `$n = 36$`, `$\bar{x}$`, `$H_0: \mu_1 = \mu_2$`, `$\alpha = .05$`)
+  and display equations as `$$...$$` for anything complex or referenced in the text.
+  Italicise scalar variables in prose (*n*, *p*), bold vectors (**x**).
+  Number display equations that are referenced (e.g., Equation (1)).
