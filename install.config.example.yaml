@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=core/schemas/install-config.json
 # ============================================================
 # agent-workspace — Example install config
 # Stats + University researcher using both Python and R

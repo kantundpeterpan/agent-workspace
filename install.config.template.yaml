@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=core/schemas/install-config.json
 # ============================================================
 # agent-workspace install configuration template
 # ============================================================
