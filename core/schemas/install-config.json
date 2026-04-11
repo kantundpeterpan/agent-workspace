@@ -10,23 +10,16 @@
       "description": "Pre-defined scope bundles to install. Each scope pulls in a curated set of agents, skills, commands, and MCP servers.",
       "items": {
         "type": "string",
-        "enum": ["coding", "stats", "study", "university"],
+        "enum": [
+          "coding",
+          "stats",
+          "study",
+          "university"
+        ],
         "description": "Scope name"
       },
       "uniqueItems": true,
       "default": []
-    },
-    "language": {
-      "type": "string",
-      "description": "Language variant for statistics and data-science agent system prompts.\n- python: Python-only (pandas, statsmodels, PyMC, scikit-learn…)\n- r: R-only (tidyverse, lme4, brms, forecast…)\n- both: Bilingual Python + R in every agent",
-      "enum": ["python", "r", "both"],
-      "default": "python"
-    },
-    "target": {
-      "type": "string",
-      "description": "Platform(s) to generate output for.\n- all: OpenCode + Continue.dev + Claude Code\n- opencode: OpenCode only\n- continue: Continue.dev only\n- claude: Claude Code only",
-      "enum": ["all", "opencode", "continue", "claude"],
-      "default": "all"
     },
     "agents": {
       "type": "array",
@@ -159,6 +152,27 @@
       },
       "uniqueItems": true,
       "default": []
+    },
+    "language": {
+      "type": "string",
+      "description": "Language variant for statistics and data-science agent system prompts.\n- python: Python-only (pandas, statsmodels, PyMC, scikit-learn…)\n- r: R-only (tidyverse, lme4, brms, forecast…)\n- both: Bilingual Python + R in every agent",
+      "enum": [
+        "python",
+        "r",
+        "both"
+      ],
+      "default": "python"
+    },
+    "target": {
+      "type": "string",
+      "description": "Platform(s) to generate output for.\n- all: OpenCode + Continue.dev + Claude Code\n- opencode: OpenCode only\n- continue: Continue.dev only\n- claude: Claude Code only",
+      "enum": [
+        "all",
+        "opencode",
+        "continue",
+        "claude"
+      ],
+      "default": "all"
     },
     "input": {
       "type": "string",
