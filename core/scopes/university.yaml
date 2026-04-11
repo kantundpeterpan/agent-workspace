@@ -1,0 +1,33 @@
+name: university
+description: Academic writing, presentations, literature search, lecture notes, and Obsidian knowledge-base management for university study and research
+
+agents:
+  - report-writer
+  - presentation-builder
+  - academic-writer
+  - literature-scout
+  - lecture-notes-generator
+  - obsidian-manager
+
+skills:
+  - report-writing
+  - presentation-generation
+  - academic-writing
+  - literature-search
+  - lecture-note-generation
+  - obsidian-vault-management
+
+commands:
+  - draft-report-section
+  - generate-slides
+  - draft-methods
+  - doi-to-bibtex
+  - ideate-research-question
+  - generate-lecture-notes
+  - obsidian-capture
+
+mcp_servers:
+  - filesystem
+  - context7
+  - anthropic-memory
+  - obsidian

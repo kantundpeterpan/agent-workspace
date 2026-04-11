@@ -1,0 +1,45 @@
+name: stats
+description: Data science and statistics agents for EDA, classical and Bayesian modelling, ML experiments, causal inference, time series, and reproducibility
+
+agents:
+  - classical-stats-analyst
+  - eda-analyst
+  - stats-modeler
+  - ml-experimenter
+  - causal-analyst
+  - ts-forecaster
+  - bayesian-modeler
+  - reproducibility-guardian
+  - experiment-tracker
+  - data-steward
+
+skills:
+  - classical-statistics
+  - eda-visualization
+  - statistical-inference
+  - ml-experimentation
+  - causal-inference
+  - time-series-analysis
+  - bayesian-inference
+  - reproducibility-audit
+  - experiment-reporting
+  - dataset-documentation
+
+commands:
+  - run-eda
+  - check-assumptions
+  - compare-models
+  - power-calculation
+  - check-stationarity
+  - check-convergence
+  - audit-reproducibility
+  - summarize-experiment
+  - document-dataset
+  - run-classical-test
+  - lint-notebook
+
+mcp_servers:
+  - filesystem
+  - context7
+  - anthropic-memory
+  - git
