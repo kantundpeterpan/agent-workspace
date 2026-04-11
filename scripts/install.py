@@ -1,12 +1,35 @@
 #!/usr/bin/env python3
 """
-Interactive CLI install assistant for agent-workspace.
+Agent-workspace environment management CLI.
 
-Usage:
-    python scripts/install.py                          # fully interactive
-    python scripts/install.py --config install.config.yaml  # use saved config
+Subcommands
+-----------
+  (no subcommand / install)   Run the interactive install wizard  [default]
+  status                      Show current config and installed items
+  list   [category]           List available items (✓ = active, ~ = via scope, ○ = inactive)
+  add    <category> <name>…   Add items to the active config and retranspile
+  remove <category> <name>…   Remove items from the active config and retranspile
+  apply                       Retranspile using the saved install.config.yaml
+  set    <key> <value>        Update a scalar setting (language, target) and retranspile
+
+Categories: agent · skill · command · mcp · scope
+
+Examples
+--------
+    python scripts/install.py                              # interactive wizard
+    python scripts/install.py --config install.config.yaml
     python scripts/install.py --scopes stats university --language r
-    python scripts/install.py --dry-run               # preview without writing files
+    python scripts/install.py --dry-run
+
+    python scripts/install.py status
+    python scripts/install.py list
+    python scripts/install.py list agents
+    python scripts/install.py add agent classical-stats-analyst
+    python scripts/install.py remove mcp filesystem
+    python scripts/install.py set language r
+    python scripts/install.py set target opencode
+    python scripts/install.py apply
+    python scripts/install.py apply --dry-run
 """
 
 from __future__ import annotations
@@ -17,7 +40,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 # ---------------------------------------------------------------------------
 # Dependency check — give a clear message if questionary/rich are missing
@@ -200,6 +223,79 @@ def _save_config(config: Dict, path: Path, dry_run: bool) -> None:
     console.print(f"\n[green]💾 Config saved to {path}[/]")
 
 
+def _load_config(path: Path) -> Optional[Dict]:
+    """Load install.config.yaml, normalising all list fields.  Returns None if missing."""
+    if not path.exists():
+        return None
+    with open(path) as f:
+        cfg = yaml.safe_load(f) or {}
+    # Normalise every list field to an actual list
+    for key in ("scopes", "agents", "skills", "commands", "mcp_servers"):
+        val = cfg.get(key)
+        if val is None:
+            cfg[key] = []
+        elif isinstance(val, str):
+            cfg[key] = [val]
+    cfg.setdefault("language", "python")
+    cfg.setdefault("target", "all")
+    return cfg
+
+
+def _default_config() -> Dict:
+    """Return a config skeleton with empty lists and sensible defaults."""
+    return {
+        "scopes": [],
+        "language": "python",
+        "target": "all",
+        "agents": [],
+        "skills": [],
+        "commands": [],
+        "mcp_servers": [],
+    }
+
+
+# Category name → config key mapping
+_CATEGORY_MAP: Dict[str, str] = {
+    "agent":    "agents",
+    "agents":   "agents",
+    "skill":    "skills",
+    "skills":   "skills",
+    "command":  "commands",
+    "commands": "commands",
+    "mcp":      "mcp_servers",
+    "mcp_servers": "mcp_servers",
+    "scope":    "scopes",
+    "scopes":   "scopes",
+}
+
+# Category singular label → available key in _load_available_items()
+_AVAILABLE_KEY: Dict[str, str] = {
+    "agents":      "agents",
+    "skills":      "skills",
+    "commands":    "commands",
+    "mcp_servers": "mcp_servers",
+    "scopes":      "scopes",
+}
+
+
+def _scope_items(workspace: Path, scope_names: List[str]) -> Dict[str, Set[str]]:
+    """Return the union of all items brought in by the given scopes."""
+    result: Dict[str, Set[str]] = {
+        "agents": set(), "skills": set(), "commands": set(), "mcp_servers": set()
+    }
+    scopes_dir = workspace / "core" / "scopes"
+    for name in scope_names:
+        path = scopes_dir / f"{name}.yaml"
+        if not path.exists():
+            continue
+        with open(path) as f:
+            data = yaml.safe_load(f) or {}
+        for key in result:
+            for item in data.get(key, []):
+                result[key].add(item)
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Interactive wizard
 # ---------------------------------------------------------------------------
@@ -342,122 +438,598 @@ def show_summary(config: Dict, available: Dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Management subcommand implementations
+# ---------------------------------------------------------------------------
+
+def cmd_status(workspace: Path, project_root: Path, config_path: Path) -> None:
+    """Show the current configuration and which items are active."""
+    config = _load_config(config_path)
+    if config is None:
+        console.print(
+            f"[yellow]⚠  No config found at [bold]{config_path}[/bold].\n"
+            "   Run [bold]python scripts/install.py[/bold] to create one.[/]"
+        )
+        return
+
+    scope_derived = _scope_items(workspace, config.get("scopes", []))
+
+    table = Table(title="Current Configuration", border_style="cyan", show_header=True)
+    table.add_column("Setting", style="bold")
+    table.add_column("Value")
+    table.add_row("Config file", str(config_path))
+    table.add_row("Scopes", ", ".join(config.get("scopes") or ["(none)"]))
+    table.add_row("Language", config.get("language", "python"))
+    table.add_row("Target", config.get("target", "all"))
+    console.print()
+    console.print(table)
+
+    for label, config_key in [
+        ("Agents", "agents"),
+        ("Skills", "skills"),
+        ("Commands", "commands"),
+        ("MCP servers", "mcp_servers"),
+    ]:
+        explicit: List[str] = config.get(config_key) or []
+        via_scope: List[str] = sorted(scope_derived.get(config_key, set()) - set(explicit))
+
+        if not explicit and not via_scope:
+            continue
+
+        t = Table(title=label, border_style="dim", show_header=True)
+        t.add_column("Name")
+        t.add_column("Source", style="dim")
+
+        for item in sorted(explicit):
+            t.add_row(item, "[green]explicit[/]")
+        for item in via_scope:
+            t.add_row(item, "[cyan]scope[/]")
+
+        console.print(t)
+
+    console.print()
+
+
+def cmd_list(
+    workspace: Path,
+    project_root: Path,
+    config_path: Path,
+    category: Optional[str],
+) -> None:
+    """List available items, marking those active in the current config."""
+    available = _load_available_items(workspace)
+    config = _load_config(config_path) or _default_config()
+    scope_derived = _scope_items(workspace, config.get("scopes", []))
+
+    # Normalise requested category
+    config_key: Optional[str] = None
+    if category:
+        config_key = _CATEGORY_MAP.get(category.lower())
+        if config_key is None:
+            console.print(
+                f"[red]❌ Unknown category '{category}'. "
+                f"Choose from: agent, skill, command, mcp, scope[/]"
+            )
+            sys.exit(1)
+
+    def _print_category(label: str, cfg_key: str, avail_key: str) -> None:
+        items = available.get(avail_key, [])
+        explicit_set = set(config.get(cfg_key) or [])
+        scope_set = scope_derived.get(cfg_key, set()) if cfg_key != "scopes" else set()
+
+        t = Table(title=label, border_style="dim", show_header=True)
+        t.add_column("Name")
+        t.add_column("Status")
+
+        for item in items:
+            if item in explicit_set:
+                t.add_row(item, "[green]✓ explicit[/]")
+            elif item in scope_set:
+                t.add_row(item, "[cyan]~ scope[/]")
+            else:
+                t.add_row(item, "[dim]○[/]")
+
+        console.print(t)
+
+    categories = [
+        ("Scopes",      "scopes",      "scopes"),
+        ("Agents",      "agents",      "agents"),
+        ("Skills",      "skills",      "skills"),
+        ("Commands",    "commands",    "commands"),
+        ("MCP servers", "mcp_servers", "mcp_servers"),
+    ]
+
+    console.print()
+    for label, cfg_key, avail_key in categories:
+        if config_key is None or config_key == cfg_key:
+            _print_category(label, cfg_key, avail_key)
+    console.print()
+
+
+def cmd_add(
+    workspace: Path,
+    project_root: Path,
+    config_path: Path,
+    category: str,
+    names: List[str],
+    dry_run: bool,
+    no_symlinks: bool,
+) -> None:
+    """Add one or more items to the config and retranspile."""
+    config_key = _CATEGORY_MAP.get(category.lower())
+    if config_key is None:
+        console.print(
+            f"[red]❌ Unknown category '{category}'. "
+            f"Choose from: agent, skill, command, mcp, scope[/]"
+        )
+        sys.exit(1)
+
+    available = _load_available_items(workspace)
+    avail_key = _AVAILABLE_KEY[config_key]
+    valid = set(available.get(avail_key, []))
+
+    unknown = [n for n in names if n not in valid]
+    if unknown:
+        console.print(
+            f"[red]❌ Unknown {category}(s): {', '.join(unknown)}\n"
+            f"   Available: {', '.join(sorted(valid))}[/]"
+        )
+        sys.exit(1)
+
+    config = _load_config(config_path)
+    if config is None:
+        console.print(f"[yellow]⚠  No config found at {config_path} — creating a default one.[/]")
+        config = _default_config()
+
+    existing: List[str] = config.get(config_key) or []
+    added = []
+    for name in names:
+        if name not in existing:
+            existing.append(name)
+            added.append(name)
+        else:
+            console.print(f"  [yellow]↩  {name} already in {config_key}[/]")
+
+    config[config_key] = existing
+
+    if added:
+        console.print(f"  [green]✓  Added to {config_key}: {', '.join(added)}[/]")
+
+    _save_config(config, config_path, dry_run=dry_run)
+
+    console.print("\n[bold]⚙  Retranspiling...[/]")
+    if not _run_transpile(workspace, config, dry_run=dry_run):
+        console.print("[red]❌ Transpile failed.[/]")
+        sys.exit(1)
+
+    if not no_symlinks:
+        _setup_symlinks(workspace, project_root, config.get("target", "all"), dry_run=dry_run)
+
+
+def cmd_remove(
+    workspace: Path,
+    project_root: Path,
+    config_path: Path,
+    category: str,
+    names: List[str],
+    dry_run: bool,
+    no_symlinks: bool,
+) -> None:
+    """Remove one or more items from the explicit config and retranspile."""
+    config_key = _CATEGORY_MAP.get(category.lower())
+    if config_key is None:
+        console.print(
+            f"[red]❌ Unknown category '{category}'. "
+            f"Choose from: agent, skill, command, mcp, scope[/]"
+        )
+        sys.exit(1)
+
+    config = _load_config(config_path)
+    if config is None:
+        console.print(f"[red]❌ No config found at {config_path}. Nothing to remove.[/]")
+        sys.exit(1)
+
+    existing: List[str] = config.get(config_key) or []
+    removed = []
+    for name in names:
+        if name in existing:
+            existing.remove(name)
+            removed.append(name)
+        else:
+            scope_derived = _scope_items(workspace, config.get("scopes", []))
+            in_scope = name in scope_derived.get(config_key, set())
+            hint = " (it is included via a scope — remove the scope instead)" if in_scope else ""
+            console.print(f"  [yellow]⚠  {name} not found in explicit {config_key}{hint}[/]")
+
+    config[config_key] = existing
+
+    if removed:
+        console.print(f"  [green]✓  Removed from {config_key}: {', '.join(removed)}[/]")
+
+    _save_config(config, config_path, dry_run=dry_run)
+
+    console.print("\n[bold]⚙  Retranspiling...[/]")
+    if not _run_transpile(workspace, config, dry_run=dry_run):
+        console.print("[red]❌ Transpile failed.[/]")
+        sys.exit(1)
+
+    if not no_symlinks:
+        _setup_symlinks(workspace, project_root, config.get("target", "all"), dry_run=dry_run)
+
+
+def cmd_apply(
+    workspace: Path,
+    project_root: Path,
+    config_path: Path,
+    dry_run: bool,
+    no_symlinks: bool,
+) -> None:
+    """Retranspile using the saved config — no prompts."""
+    config = _load_config(config_path)
+    if config is None:
+        console.print(
+            f"[red]❌ No config found at {config_path}.\n"
+            "   Run the install wizard first: python scripts/install.py[/]"
+        )
+        sys.exit(1)
+
+    console.print(f"📄 Loaded config from [bold]{config_path}[/]")
+    show_summary(config, _load_available_items(workspace))
+
+    if dry_run:
+        console.print("[yellow]🔍 Dry run — no files will be written.[/]")
+
+    console.print("\n[bold]⚙  Running transpile...[/]")
+    if not _run_transpile(workspace, config, dry_run=dry_run):
+        console.print("[red]❌ Transpile failed.[/]")
+        sys.exit(1)
+
+    if not no_symlinks:
+        _setup_symlinks(workspace, project_root, config.get("target", "all"), dry_run=dry_run)
+
+    console.print(Panel.fit(
+        "[bold green]✅ Apply complete![/]",
+        border_style="green",
+    ))
+
+
+def cmd_set(
+    workspace: Path,
+    project_root: Path,
+    config_path: Path,
+    key: str,
+    value: str,
+    dry_run: bool,
+    no_symlinks: bool,
+) -> None:
+    """Update a scalar setting in the config and retranspile."""
+    allowed: Dict[str, List[str]] = {
+        "language": ["python", "r", "both"],
+        "target":   ["opencode", "continue", "claude", "all"],
+    }
+    if key not in allowed:
+        console.print(
+            f"[red]❌ Unknown key '{key}'. Settable keys: {', '.join(allowed)}[/]"
+        )
+        sys.exit(1)
+    if value not in allowed[key]:
+        console.print(
+            f"[red]❌ Invalid value '{value}' for '{key}'. "
+            f"Allowed: {', '.join(allowed[key])}[/]"
+        )
+        sys.exit(1)
+
+    config = _load_config(config_path)
+    if config is None:
+        console.print(f"[yellow]⚠  No config found at {config_path} — creating a default one.[/]")
+        config = _default_config()
+
+    old_value = config.get(key)
+    config[key] = value
+    console.print(f"  [green]✓  {key}: {old_value!r} → {value!r}[/]")
+
+    _save_config(config, config_path, dry_run=dry_run)
+
+    console.print("\n[bold]⚙  Retranspiling...[/]")
+    if not _run_transpile(workspace, config, dry_run=dry_run):
+        console.print("[red]❌ Transpile failed.[/]")
+        sys.exit(1)
+
+    if not no_symlinks:
+        _setup_symlinks(workspace, project_root, config.get("target", "all"), dry_run=dry_run)
+
+
+# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 
+# Subcommand names — used for backward-compat fallback injection
+_SUBCOMMANDS = {"install", "status", "list", "add", "remove", "apply", "set"}
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Interactive install assistant for agent-workspace.",
+    # ------------------------------------------------------------------
+    # Backward-compat: if the first positional arg is not a known
+    # subcommand (or there are no positional args), prepend "install"
+    # so existing invocations like `install.py --config foo.yaml` keep
+    # working unchanged.
+    # ------------------------------------------------------------------
+    raw = sys.argv[1:]
+    if not raw or raw[0].startswith("-") or raw[0] not in _SUBCOMMANDS:
+        raw = ["install"] + raw
+
+    # ------------------------------------------------------------------
+    # Top-level parser — shared flags
+    # ------------------------------------------------------------------
+    top = argparse.ArgumentParser(
+        description="Agent-workspace environment management CLI.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    parser.add_argument(
-        "--config", metavar="PATH",
-        help="Load configuration from a YAML file instead of running the wizard."
-    )
-    parser.add_argument(
-        "--scopes", nargs="*", metavar="SCOPE",
-        help="Scopes to install (coding, stats, university, study)."
-    )
-    parser.add_argument(
-        "--language", choices=["python", "r", "both"], default=None,
-        help="Language variant for stats/DS agents."
-    )
-    parser.add_argument(
-        "--target", choices=["opencode", "continue", "claude", "all"], default=None,
-        help="Platform target."
-    )
-    parser.add_argument(
+    top.add_argument(
         "--project-root", metavar="PATH", default=None,
-        help="Project root to install symlinks into (default: current directory)."
-    )
-    parser.add_argument(
-        "--dry-run", action="store_true",
-        help="Preview what would be done without writing any files."
-    )
-    parser.add_argument(
-        "--no-symlinks", action="store_true",
-        help="Run transpile but skip symlink creation."
+        help="Project root to install symlinks into (default: current directory).",
     )
 
-    args = parser.parse_args()
+    subs = top.add_subparsers(dest="subcommand")
+
+    # ------------------------------------------------------------------
+    # install (default / wizard)
+    # ------------------------------------------------------------------
+    p_install = subs.add_parser(
+        "install", help="Run the interactive install wizard (default)."
+    )
+    p_install.add_argument(
+        "--config", metavar="PATH",
+        help="Load configuration from a YAML file instead of running the wizard.",
+    )
+    p_install.add_argument(
+        "--scopes", nargs="*", metavar="SCOPE",
+        help="Scopes to install (coding, stats, university, study).",
+    )
+    p_install.add_argument(
+        "--language", choices=["python", "r", "both"], default=None,
+        help="Language variant for stats/DS agents.",
+    )
+    p_install.add_argument(
+        "--target", choices=["opencode", "continue", "claude", "all"], default=None,
+        help="Platform target.",
+    )
+    p_install.add_argument(
+        "--dry-run", action="store_true",
+        help="Preview what would be done without writing any files.",
+    )
+    p_install.add_argument(
+        "--no-symlinks", action="store_true",
+        help="Run transpile but skip symlink creation.",
+    )
+
+    # ------------------------------------------------------------------
+    # status
+    # ------------------------------------------------------------------
+    p_status = subs.add_parser(
+        "status", help="Show the current config and active items."
+    )
+    p_status.add_argument(
+        "--config", metavar="PATH", default=None,
+        help="Config file to inspect (default: install.config.yaml in project root).",
+    )
+
+    # ------------------------------------------------------------------
+    # list
+    # ------------------------------------------------------------------
+    p_list = subs.add_parser(
+        "list", help="List available items with their activation status."
+    )
+    p_list.add_argument(
+        "category", nargs="?", default=None,
+        metavar="CATEGORY",
+        help="Filter to a single category: agent, skill, command, mcp, scope.",
+    )
+    p_list.add_argument(
+        "--config", metavar="PATH", default=None,
+        help="Config file to read active items from.",
+    )
+
+    # ------------------------------------------------------------------
+    # add
+    # ------------------------------------------------------------------
+    p_add = subs.add_parser(
+        "add", help="Add items to the active config and retranspile."
+    )
+    p_add.add_argument(
+        "category", metavar="CATEGORY",
+        help="Category to add to: agent, skill, command, mcp, scope.",
+    )
+    p_add.add_argument(
+        "names", nargs="+", metavar="NAME",
+        help="Item name(s) to add.",
+    )
+    p_add.add_argument(
+        "--config", metavar="PATH", default=None,
+        help="Config file to modify (default: install.config.yaml).",
+    )
+    p_add.add_argument("--dry-run", action="store_true")
+    p_add.add_argument("--no-symlinks", action="store_true")
+
+    # ------------------------------------------------------------------
+    # remove
+    # ------------------------------------------------------------------
+    p_remove = subs.add_parser(
+        "remove", help="Remove items from the explicit config and retranspile."
+    )
+    p_remove.add_argument(
+        "category", metavar="CATEGORY",
+        help="Category to remove from: agent, skill, command, mcp, scope.",
+    )
+    p_remove.add_argument(
+        "names", nargs="+", metavar="NAME",
+        help="Item name(s) to remove.",
+    )
+    p_remove.add_argument(
+        "--config", metavar="PATH", default=None,
+        help="Config file to modify (default: install.config.yaml).",
+    )
+    p_remove.add_argument("--dry-run", action="store_true")
+    p_remove.add_argument("--no-symlinks", action="store_true")
+
+    # ------------------------------------------------------------------
+    # apply
+    # ------------------------------------------------------------------
+    p_apply = subs.add_parser(
+        "apply", help="Retranspile using the saved install.config.yaml — no prompts."
+    )
+    p_apply.add_argument(
+        "--config", metavar="PATH", default=None,
+        help="Config file to apply (default: install.config.yaml).",
+    )
+    p_apply.add_argument("--dry-run", action="store_true")
+    p_apply.add_argument("--no-symlinks", action="store_true")
+
+    # ------------------------------------------------------------------
+    # set
+    # ------------------------------------------------------------------
+    p_set = subs.add_parser(
+        "set", help="Update a scalar setting (language, target) and retranspile."
+    )
+    p_set.add_argument(
+        "key", metavar="KEY",
+        help="Setting to change: language, target.",
+    )
+    p_set.add_argument(
+        "value", metavar="VALUE",
+        help="New value.",
+    )
+    p_set.add_argument(
+        "--config", metavar="PATH", default=None,
+        help="Config file to modify (default: install.config.yaml).",
+    )
+    p_set.add_argument("--dry-run", action="store_true")
+    p_set.add_argument("--no-symlinks", action="store_true")
+
+    # ------------------------------------------------------------------
+    # Parse
+    # ------------------------------------------------------------------
+    args = top.parse_args(raw)
 
     workspace = _find_workspace_root()
     project_root = Path(args.project_root).resolve() if args.project_root else Path.cwd()
-    available = _load_available_items(workspace)
 
     console.print(f"[dim]Workspace: {workspace}[/]")
     console.print(f"[dim]Project:   {project_root}[/]\n")
 
-    # ---- Load or collect config ----
-    if args.config:
-        # Load from file
-        import yaml as _yaml
-        config_path = Path(args.config)
-        if not config_path.exists():
-            console.print(f"[red]❌ Config file not found: {config_path}[/]")
-            sys.exit(1)
-        with open(config_path) as f:
-            config = _yaml.safe_load(f) or {}
-        console.print(f"📄 Loaded config from [bold]{config_path}[/]")
-    elif args.scopes or args.language or args.target:
-        # Non-interactive mode from CLI flags
-        config = {
-            "scopes": args.scopes or [],
-            "language": args.language or "python",
-            "target": args.target or "all",
-            "agents": [],
-            "skills": [],
-            "commands": [],
-            "mcp_servers": [],
-            "_save": False,
-        }
+    # Resolve config path for management commands
+    def _resolve_config_path(explicit: Optional[str]) -> Path:
+        if explicit:
+            return Path(explicit).resolve()
+        return project_root / "install.config.yaml"
+
+    # ------------------------------------------------------------------
+    # Dispatch
+    # ------------------------------------------------------------------
+    if args.subcommand == "status":
+        cmd_status(workspace, project_root, _resolve_config_path(args.config))
+
+    elif args.subcommand == "list":
+        cmd_list(workspace, project_root, _resolve_config_path(args.config), args.category)
+
+    elif args.subcommand == "add":
+        cmd_add(
+            workspace, project_root,
+            _resolve_config_path(args.config),
+            args.category, args.names,
+            args.dry_run, args.no_symlinks,
+        )
+
+    elif args.subcommand == "remove":
+        cmd_remove(
+            workspace, project_root,
+            _resolve_config_path(args.config),
+            args.category, args.names,
+            args.dry_run, args.no_symlinks,
+        )
+
+    elif args.subcommand == "apply":
+        cmd_apply(
+            workspace, project_root,
+            _resolve_config_path(args.config),
+            args.dry_run, args.no_symlinks,
+        )
+
+    elif args.subcommand == "set":
+        cmd_set(
+            workspace, project_root,
+            _resolve_config_path(args.config),
+            args.key, args.value,
+            args.dry_run, args.no_symlinks,
+        )
+
     else:
-        # Full interactive wizard
-        config = run_wizard(workspace, available)
+        # "install" subcommand — original wizard logic
+        available = _load_available_items(workspace)
 
-    # Apply CLI overrides on top of loaded config
-    if args.language:
-        config["language"] = args.language
-    if args.target:
-        config["target"] = args.target
+        if args.config:
+            config_path = Path(args.config)
+            if not config_path.exists():
+                console.print(f"[red]❌ Config file not found: {config_path}[/]")
+                sys.exit(1)
+            config = _load_config(config_path) or {}
+            console.print(f"📄 Loaded config from [bold]{config_path}[/]")
+        elif args.scopes or args.language or args.target:
+            config = {
+                "scopes": args.scopes or [],
+                "language": args.language or "python",
+                "target": args.target or "all",
+                "agents": [],
+                "skills": [],
+                "commands": [],
+                "mcp_servers": [],
+                "_save": False,
+            }
+        else:
+            config = run_wizard(workspace, available)
 
-    show_summary(config, available)
+        # Apply CLI overrides on top of loaded config
+        if args.language:
+            config["language"] = args.language
+        if args.target:
+            config["target"] = args.target
 
-    if args.dry_run:
-        console.print("[yellow]🔍 Dry run — no files will be written.[/]")
+        show_summary(config, available)
 
-    # Confirm before proceeding (only in interactive mode)
-    if not args.config and not args.scopes and not args.language and not args.target:
-        proceed = questionary.confirm(
-            "Proceed with installation?", default=True, style=CUSTOM_STYLE
-        ).ask()
-        if not proceed:
-            console.print("[yellow]Installation cancelled.[/]")
-            sys.exit(0)
+        if args.dry_run:
+            console.print("[yellow]🔍 Dry run — no files will be written.[/]")
 
-    # ---- Save config ----
-    if config.pop("_save", False) and not args.dry_run:
-        _save_config(config, project_root / "install.config.yaml", dry_run=False)
+        # Confirm before proceeding (only in interactive mode)
+        if not args.config and not args.scopes and not args.language and not args.target:
+            proceed = questionary.confirm(
+                "Proceed with installation?", default=True, style=CUSTOM_STYLE
+            ).ask()
+            if not proceed:
+                console.print("[yellow]Installation cancelled.[/]")
+                sys.exit(0)
 
-    # ---- Transpile ----
-    console.print("\n[bold]⚙  Running transpile...[/]")
-    success = _run_transpile(workspace, config, dry_run=args.dry_run)
-    if not success:
-        console.print("[red]❌ Transpile failed. Check output above.[/]")
-        sys.exit(1)
+        # Save config
+        if config.pop("_save", False) and not args.dry_run:
+            _save_config(config, project_root / "install.config.yaml", dry_run=False)
 
-    # ---- Symlinks ----
-    if not args.no_symlinks:
-        target = config.get("target", "all")
-        _setup_symlinks(workspace, project_root, target, dry_run=args.dry_run)
+        # Transpile
+        console.print("\n[bold]⚙  Running transpile...[/]")
+        success = _run_transpile(workspace, config, dry_run=args.dry_run)
+        if not success:
+            console.print("[red]❌ Transpile failed. Check output above.[/]")
+            sys.exit(1)
 
-    console.print(Panel.fit(
-        "[bold green]✅ Installation complete![/]\n\n"
-        "Your project now has access to the selected agents, skills, and commands.\n"
-        "[dim]To update: git submodule update --remote && python scripts/install.py[/]",
-        border_style="green",
-    ))
+        # Symlinks
+        if not args.no_symlinks:
+            target = config.get("target", "all")
+            _setup_symlinks(workspace, project_root, target, dry_run=args.dry_run)
+
+        console.print(Panel.fit(
+            "[bold green]✅ Installation complete![/]\n\n"
+            "Your project now has access to the selected agents, skills, and commands.\n"
+            "[dim]To update: git submodule update --remote && python scripts/install.py[/]",
+            border_style="green",
+        ))
 
 
 if __name__ == "__main__":
