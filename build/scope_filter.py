@@ -167,8 +167,13 @@ def resolve_filters(
         skill_filter   = _apply(skill_filter,   config.get("skills"))
         command_filter = _apply(command_filter, config.get("commands"))
         mcp_filter     = _apply(mcp_filter,     config.get("mcp_servers"))
-        # config uses "tools" key; scope YAML uses "custom_tools"
-        tool_filter    = _apply(tool_filter,    config.get("tools") or config.get("custom_tools"))
+        # config uses "tools" key; scope YAML uses "custom_tools".
+        # Use an explicit None check so that an empty list ([]) is not
+        # swallowed by the truthiness of `or` ([] is falsy in Python).
+        _tools = config.get("tools")
+        if _tools is None:
+            _tools = config.get("custom_tools")
+        tool_filter    = _apply(tool_filter,    _tools)
 
         language = config.get("language", "python")
         target = config.get("target", "all")

@@ -108,6 +108,7 @@ def generate_opencode_config(
     agent_filter: Optional[Set[str]] = None,
     command_filter: Optional[Set[str]] = None,
     skill_filter: Optional[Set[str]] = None,
+    mcp_filter: Optional[Set[str]] = None,
     language: str = "python",
 ) -> Dict:
     """Generate OpenCode configuration."""
@@ -124,6 +125,8 @@ def generate_opencode_config(
         for server_file in mcp_path.glob("*.json"):
             server = load_mcp_server(server_file)
             name = server.pop("name", server_file.stem)
+            if mcp_filter is not None and name not in mcp_filter:
+                continue
             # keep the raw server definition for now; we'll normalize to schema
             config["mcp"][name] = server
 
@@ -604,6 +607,7 @@ def transpile(
                 agent_filter=agent_filter,
                 command_filter=command_filter,
                 skill_filter=skill_filter,
+                mcp_filter=mcp_filter,
                 language=language,
             )
 

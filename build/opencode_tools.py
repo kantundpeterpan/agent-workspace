@@ -562,6 +562,11 @@ def generate_opencode_tools(
         return True
 
     output_tools_path = output_path / "tools"
+    # Always clear the output tools directory so that previously-generated
+    # files for tools that are now filtered out do not linger.
+    if output_tools_path.exists():
+        import shutil
+        shutil.rmtree(output_tools_path)
     output_tools_path.mkdir(parents=True, exist_ok=True)
 
     transpiler = OpenCodeToolTranspiler(workspace_root)
