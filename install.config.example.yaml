@@ -5,7 +5,7 @@
 # ============================================================
 # To use this example:
 #   cp install.config.example.yaml install.config.yaml
-#   python scripts/install.py --config install.config.yaml
+#   python scripts/workspace.py install --config install.config.yaml
 # ============================================================
 
 scopes:

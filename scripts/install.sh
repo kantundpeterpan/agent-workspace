@@ -107,7 +107,7 @@ if [ "$INTERACTIVE" = true ]; then
         exit 1
     fi
     echo "🐍 Launching interactive install wizard..."
-    INSTALL_ARGS=("$WORKSPACE_DIR/scripts/install.py")
+    INSTALL_ARGS=("$WORKSPACE_DIR/scripts/workspace.py" "install")
     [ "$DRY_RUN" = true ] && INSTALL_ARGS+=("--dry-run")
     [ "$NO_SYMLINKS" = true ] && INSTALL_ARGS+=("--no-symlinks")
     exec "$PYTHON" "${INSTALL_ARGS[@]}"

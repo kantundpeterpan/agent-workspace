@@ -68,20 +68,31 @@ def merge_scopes(scopes_dir: Path, scope_names: List[str]) -> Dict:
 # ---------------------------------------------------------------------------
 
 def load_install_config(config_path: Path) -> Dict:
-    """Load and validate an install config YAML file."""
+    """Load and validate an install config YAML file.
+
+    List-field semantics after loading
+    -----------------------------------
+    absent / null / "all" / ["all"]  →  None   (no constraint; let scope decide)
+    []                               →  []     (explicit empty; install nothing)
+    "single-name"                    →  ["single-name"]
+    ["a", "b", …]                    →  ["a", "b", …]
+    """
     with open(config_path) as f:
         cfg = yaml.safe_load(f)
 
     if cfg is None:
         cfg = {}
 
-    # Normalise keys to lists
     for key in ("scopes", "agents", "skills", "commands", "mcp_servers", "custom_tools"):
-        val = cfg.get(key)
-        if val is None:
-            cfg[key] = []
-        elif isinstance(val, str):
-            cfg[key] = [val]
+        if key not in cfg:
+            cfg[key] = None                          # absent → no constraint
+        else:
+            val = cfg[key]
+            if val is None or val == "all" or val == ["all"]:
+                cfg[key] = None                      # explicit "all" or null
+            elif isinstance(val, str):
+                cfg[key] = [val]                     # single-item shorthand
+            # else: keep val as-is ([] or a proper list)
 
     if "language" not in cfg:
         cfg["language"] = "python"
@@ -108,6 +119,11 @@ def resolve_filters(
 
     Priority:
         CLI --language / --target  >  config file  >  scope defaults
+
+    List-field semantics (agents / skills / commands / mcp_servers):
+        None   → no constraint from this source (other sources may still apply)
+        []     → explicit empty; overrides scope to install nothing
+        [...]  → union with scope-derived set (or replace if no scope set)
     """
     scopes_dir = core_path / "scopes"
 
@@ -130,28 +146,25 @@ def resolve_filters(
         command_filter = set(merged["commands"]) if merged["commands"] else None
         mcp_filter = set(merged["mcp_servers"]) if merged["mcp_servers"] else None
 
-    # 2. Apply explicit overrides from config (union with scope)
+    # 2. Apply explicit overrides from config
+    #    None   → no change (absent from config)
+    #    []     → override to empty set (install nothing for this category)
+    #    [...]  → union with scope-derived filter (or replace if None)
+    def _apply(current: Optional[Set[str]], items: Optional[List[str]]) -> Optional[Set[str]]:
+        if items is None:
+            return current          # absent: no change
+        if not items:
+            return set()            # explicit empty: install nothing
+        if current is None:
+            return set(items)       # no scope filter → use explicit list as the filter
+        current.update(items)       # union with scope
+        return current
+
     if config:
-        for items, filt_attr in (
-            (config.get("agents"), "agent_filter"),
-            (config.get("skills"), "skill_filter"),
-            (config.get("commands"), "command_filter"),
-            (config.get("mcp_servers"), "mcp_filter"),
-        ):
-            if items:
-                current = locals()[filt_attr]
-                if current is None:
-                    # Replace entirely if no scope filter set
-                    locals_copy = {"agent_filter": agent_filter, "skill_filter": skill_filter,
-                                   "command_filter": command_filter, "mcp_filter": mcp_filter}
-                    locals_copy[filt_attr] = set(items)
-                    agent_filter = locals_copy["agent_filter"]
-                    skill_filter = locals_copy["skill_filter"]
-                    command_filter = locals_copy["command_filter"]
-                    mcp_filter = locals_copy["mcp_filter"]
-                else:
-                    # Union
-                    current.update(items)
+        agent_filter   = _apply(agent_filter,   config.get("agents"))
+        skill_filter   = _apply(skill_filter,   config.get("skills"))
+        command_filter = _apply(command_filter, config.get("commands"))
+        mcp_filter     = _apply(mcp_filter,     config.get("mcp_servers"))
 
         language = config.get("language", "python")
         target = config.get("target", "all")
@@ -184,6 +197,22 @@ def main() -> None:
         "--scopes", nargs="*", metavar="SCOPE",
         help="One or more scope names (coding, stats, university, study). "
              "Can be combined: --scopes stats university"
+    )
+    parser.add_argument(
+        "--agents", nargs="*", metavar="AGENT",
+        help="Explicit agent list. Pass with no names (--agents) to install none.",
+    )
+    parser.add_argument(
+        "--skills", nargs="*", metavar="SKILL",
+        help="Explicit skill list. Pass with no names to install none.",
+    )
+    parser.add_argument(
+        "--commands", nargs="*", metavar="COMMAND",
+        help="Explicit command list. Pass with no names to install none.",
+    )
+    parser.add_argument(
+        "--mcp-servers", nargs="*", metavar="SERVER", dest="mcp_servers",
+        help="Explicit MCP-server list. Pass with no names to install none.",
     )
     parser.add_argument(
         "--config", metavar="PATH",
@@ -241,6 +270,18 @@ def main() -> None:
     skill_filter = filters["skill_filter"]
     command_filter = filters["command_filter"]
     mcp_filter = filters["mcp_filter"]
+
+    # CLI explicit item lists are the highest-priority override.
+    # nargs="*"  → None when flag absent, [] when flag present with no names.
+    def _cli_override(current: Optional[Set[str]], cli_val: Optional[List[str]]) -> Optional[Set[str]]:
+        if cli_val is None:
+            return current      # flag not supplied: keep resolved value
+        return set(cli_val)     # flag supplied (even if empty): override
+
+    agent_filter   = _cli_override(agent_filter,   args.agents)
+    skill_filter   = _cli_override(skill_filter,   args.skills)
+    command_filter = _cli_override(command_filter, args.commands)
+    mcp_filter     = _cli_override(mcp_filter,     args.mcp_servers)
 
     # Report what we're doing
     if args.scopes or (config and config.get("scopes")):
