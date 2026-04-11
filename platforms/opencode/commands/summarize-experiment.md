@@ -1,0 +1,17 @@
+---
+description: "Summarise a completed ML or statistical experiment \u2014 dataset, method,\
+  \ results, and comparison against baseline"
+---
+
+Summarise the following experiment in a structured format suitable for a lab notebook or report.
+
+Include:
+1. **Objective** — what hypothesis or research question was tested
+2. **Dataset** — source, size, preprocessing steps
+3. **Method** — model/test choice and configuration
+4. **Results** — key metrics with confidence intervals
+5. **Baseline comparison** — how does this compare to the null or previous best?
+6. **Conclusions** — what does this result mean for the project?
+7. **Next steps** — what should be tried next?
+
+Experiment details: $ARGUMENTS

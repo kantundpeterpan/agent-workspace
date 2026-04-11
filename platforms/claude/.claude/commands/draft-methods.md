@@ -1,0 +1,18 @@
+---
+description: "Draft a complete Methods section \u2014 participants, materials, procedure,\
+  \ and statistical analysis plan \u2014 for a given study design"
+argument-hint: $ARGUMENTS
+---
+
+Draft a Methods section for the following study.
+
+Include all standard subsections:
+1. **Participants / Data sources** — N, inclusion/exclusion criteria, sampling method
+2. **Materials / Measures** — instruments, variables, operationalisation
+3. **Procedure** — step-by-step data collection or experimental protocol
+4. **Statistical Analysis** — pre-specified tests, significance threshold $\alpha$, power calculation, software
+
+Use APA 7th citation style. Report all statistical parameters in LaTeX math notation.
+Flag any missing information with [NEEDED: ...] placeholders.
+
+Study description: $ARGUMENTS

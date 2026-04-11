@@ -1,0 +1,42 @@
+# ============================================================
+# agent-workspace — Example install config
+# Stats + University researcher using both Python and R
+# ============================================================
+# To use this example:
+#   cp install.config.example.yaml install.config.yaml
+#   python scripts/install.py --config install.config.yaml
+# ============================================================
+
+scopes:
+  - stats
+  - university
+
+# R-capable stats/DS agents
+language: r
+
+# Install to all three platforms
+target: all
+
+# Extra agents beyond the scope defaults
+agents:
+  - bayesian-modeler
+  - obsidian-manager
+
+# Extra skills
+skills:
+  - bayesian-inference
+  - obsidian-vault-management
+
+# Extra commands
+commands:
+  - doi-to-bibtex
+  - check-convergence
+  - obsidian-capture
+
+# MCP servers — include Obsidian for vault integration
+mcp_servers:
+  - filesystem
+  - context7
+  - anthropic-memory
+  - obsidian
+  - git

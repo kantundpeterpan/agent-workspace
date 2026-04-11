@@ -1,0 +1,15 @@
+---
+description: Compare two or more statistical or ML models using appropriate metrics,
+  tests, and visualisations
+---
+
+Compare the following models using appropriate statistical criteria.
+
+For each comparison:
+1. Report performance metrics (AIC/BIC for statistical models; RMSE/AUC for ML models)
+2. Run a formal comparison test where applicable (likelihood ratio test, DeLong's test)
+3. Assess practical significance (not just statistical significance)
+4. Produce a comparison table and visualisation
+5. Recommend the preferred model with justification
+
+Models to compare: $ARGUMENTS

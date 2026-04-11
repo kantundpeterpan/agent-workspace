@@ -1,0 +1,15 @@
+---
+description: "Check statistical model assumptions \u2014 normality, homoscedasticity,\
+  \ independence, linearity \u2014 and report violations with diagnostic plots"
+argument-hint: $ARGUMENTS
+---
+
+Check the statistical assumptions for the following model or test result.
+
+For each assumption:
+1. State the assumption formally (using $...$  notation where appropriate)
+2. Choose the appropriate diagnostic test or plot
+3. Run the diagnostic and report the outcome
+4. Flag any violations and suggest remedies (transformation, robust SE, non-parametric alternative)
+
+Model / result to check: $ARGUMENTS

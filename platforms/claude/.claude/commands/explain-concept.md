@@ -1,0 +1,19 @@
+---
+description: "Explain a statistical, mathematical, or data science concept at multiple\
+  \ levels \u2014 intuitive to formal"
+argument-hint: $ARGUMENTS
+---
+
+Explain the following concept at four levels of depth.
+
+Levels:
+1. **Intuitive** — plain language analogy, no jargon
+2. **Conceptual** — informal definition, diagrams described in text
+3. **Formal** — precise notation with LaTeX dollar math (`$...$` / `$$...$$`)
+4. **Computational** — working code example in Python and/or R
+
+Also:
+- Identify and correct the 2–3 most common misconceptions about this concept
+- End with a short comprehension question for the learner
+
+Concept: $ARGUMENTS

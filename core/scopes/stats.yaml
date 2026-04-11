@@ -43,3 +43,7 @@ mcp_servers:
   - context7
   - anthropic-memory
   - git
+
+custom_tools:
+  - data-profiler
+  - stats-formatter

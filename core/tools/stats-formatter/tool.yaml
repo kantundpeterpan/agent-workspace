@@ -1,0 +1,69 @@
+name: stats-formatter
+description: Formats statistical results into APA 7th edition strings (e.g. "t(48) = 3.21, p = .002, d = 0.91, 95% CI [0.37, 1.44]")
+
+exports:
+  - name: format_result
+    type: function
+    object: format_result
+
+schema:
+  input:
+    type: object
+    required: [test_type]
+    properties:
+      test_type:
+        type: string
+        enum: [t_test, f_test, chi_square, correlation, z_test, mann_whitney, wilcoxon, kruskal, regression_coef]
+        description: Type of statistical test to format
+      statistic:
+        type: number
+        description: Test statistic value
+      df:
+        type: string
+        description: Degrees of freedom (e.g. "48" for t, "2, 45" for F)
+      p_value:
+        type: number
+        description: p-value (will be formatted as < .001 if below threshold)
+      effect_size:
+        type: number
+        description: Effect size value (Cohen's d, eta-squared, r, etc.)
+      effect_size_type:
+        type: string
+        enum: [d, eta2, partial_eta2, omega2, r, phi, V, f2, OR]
+        description: Symbol to use for effect size
+      ci_lower:
+        type: number
+        description: Lower bound of 95% confidence interval
+      ci_upper:
+        type: number
+        description: Upper bound of 95% confidence interval
+      n:
+        type: integer
+        description: Sample size (used for some test types)
+      alpha:
+        type: number
+        default: 0.05
+        description: Significance threshold
+
+  output:
+    type: object
+    required: [status, apa_string]
+    properties:
+      status:
+        type: string
+        enum: [success, error]
+      apa_string:
+        type: string
+        description: Fully formatted APA result string
+      latex_string:
+        type: string
+        description: Same result with LaTeX dollar notation for math symbols
+      significant:
+        type: boolean
+        description: Whether the result is significant at the given alpha
+      message:
+        type: string
+
+implementation:
+  language: python
+  entry: script.py

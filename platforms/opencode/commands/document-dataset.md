@@ -1,0 +1,16 @@
+---
+description: "Generate a structured data dictionary and README for a dataset \u2014\
+  \ column names, types, ranges, missing values, provenance"
+---
+
+Generate complete documentation for the following dataset.
+
+Produce:
+1. A data dictionary table: column name, type, description, units, valid range, missing rate
+2. Dataset provenance: source, collection date, licence, known limitations
+3. Suggested preprocessing steps (encoding, scaling, imputation)
+4. Example use cases
+
+Format the output as Markdown suitable for a README.md or Quarto document.
+
+Dataset or file path: $ARGUMENTS

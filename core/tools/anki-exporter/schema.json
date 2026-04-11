@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["deck_name", "cards"],
+  "properties": {
+    "deck_name": {
+      "type": "string",
+      "description": "Name for the Anki deck"
+    },
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["front", "back"],
+        "properties": {
+          "front": { "type": "string" },
+          "back": { "type": "string" },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "output_format": {
+      "type": "string",
+      "enum": ["txt", "csv"],
+      "default": "txt"
+    },
+    "output_path": { "type": "string" },
+    "tag_all": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+---
+description: Calculate required sample size or achieved statistical power for a given
+  test, effect size, and alpha level
+argument-hint: $ARGUMENTS
+---
+
+Perform a statistical power analysis for the following scenario.
+
+Provide:
+1. The test type and its assumptions
+2. The effect size (or how to estimate it): $d$, $f$, $r$, $w$, etc.
+3. The significance level $\alpha$ (default 0.05)
+4. The desired power $1 - \beta$ (default 0.80)
+5. The calculated required sample size (or achieved power if $n$ is fixed)
+6. A power curve plot showing power vs. sample size
+
+Scenario: $ARGUMENTS

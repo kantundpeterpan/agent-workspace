@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["identifier"],
+  "properties": {
+    "identifier": {
+      "type": "string",
+      "description": "DOI, arXiv ID, or PubMed ID"
+    },
+    "format": {
+      "type": "string",
+      "enum": ["bibtex", "apa", "mla", "chicago"],
+      "default": "bibtex"
+    },
+    "cite_key": {
+      "type": "string",
+      "description": "Optional custom BibTeX cite key"
+    }
+  }
+}

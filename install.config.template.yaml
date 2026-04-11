@@ -1,0 +1,89 @@
+# ============================================================
+# agent-workspace install configuration template
+# ============================================================
+# Copy this file to install.config.yaml and edit as needed.
+# Run: python scripts/install.py --config install.config.yaml
+# Or:  bash scripts/install.sh --config install.config.yaml
+# ============================================================
+
+
+# ------------------------------------------------------------------
+# SCOPES
+# ------------------------------------------------------------------
+# Pre-defined bundles. Choose one or more.
+# Available: coding | stats | university | study
+#
+# scopes:
+#   - coding
+#   - stats
+#   - university
+#   - study
+scopes: []
+
+
+# ------------------------------------------------------------------
+# LANGUAGE (stats/DS agents only)
+# ------------------------------------------------------------------
+# python  → Python-only system prompts (default)
+# r       → R-only system prompts
+# both    → Bilingual Python + R system prompts
+#
+# language: python
+language: python
+
+
+# ------------------------------------------------------------------
+# TARGET PLATFORM
+# ------------------------------------------------------------------
+# all        → opencode + continue + claude  (default)
+# opencode   → OpenCode only
+# continue   → Continue.dev only
+# claude     → Claude Code only
+#
+# target: all
+target: all
+
+
+# ------------------------------------------------------------------
+# GRANULAR SELECTION (optional — overrides / extends scope)
+# ------------------------------------------------------------------
+# These lists are UNIONED with whatever the selected scopes include.
+# Leave empty (or comment out) to use scope defaults.
+
+# Additional agents to include beyond scope defaults:
+agents: []
+# Example:
+# agents:
+#   - bayesian-modeler
+#   - report-writer
+
+# Additional skills to include:
+skills: []
+# Example:
+# skills:
+#   - bayesian-inference
+#   - report-writing
+
+# Additional commands to include:
+commands: []
+# Example:
+# commands:
+#   - run-eda
+#   - draft-report-section
+
+# MCP servers to include:
+mcp_servers: []
+# Example:
+# mcp_servers:
+#   - filesystem
+#   - obsidian
+#   - context7
+
+
+# ------------------------------------------------------------------
+# OUTPUT PATHS (optional — defaults shown)
+# ------------------------------------------------------------------
+# input:  core/
+# output: platforms/
+# input: core/
+# output: platforms/

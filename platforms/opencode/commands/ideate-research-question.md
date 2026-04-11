@@ -1,0 +1,17 @@
+---
+description: "Generate, refine, and evaluate potential research questions from a topic\
+  \ area \u2014 assessing novelty, feasibility, and contribution"
+---
+
+Generate and evaluate research questions for the following topic or domain.
+
+For each candidate question:
+1. State the question clearly and specifically
+2. Classify it: descriptive, relational, causal, or predictive
+3. Assess: novelty, feasibility, dataset availability, expected contribution
+4. Suggest a study design and primary statistical approach
+5. Identify potential confounders or limitations
+
+Produce 5–8 candidate questions ranked by potential contribution.
+
+Topic area: $ARGUMENTS

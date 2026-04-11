@@ -1,0 +1,16 @@
+name: check-convergence
+description: Diagnose MCMC convergence for a Bayesian model — R-hat, ESS, trace plots, energy plots, divergences
+prompt: |
+  Diagnose MCMC convergence for the following fitted Bayesian model.
+
+  Check:
+  1. $\hat{R}$ (R-hat) for all parameters — flag any $> 1.01$
+  2. Bulk-ESS and Tail-ESS — flag any $< 400$
+  3. Number of divergent transitions
+  4. Trace plots for all primary parameters
+  5. Energy plot (E-BFMI — flag if $< 0.3$)
+  6. Rank plots (trank plots) for multi-chain diagnostics
+
+  Provide actionable fixes for any convergence issues found.
+
+  Model object / trace file: $ARGUMENTS

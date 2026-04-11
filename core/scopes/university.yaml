@@ -31,3 +31,6 @@ mcp_servers:
   - context7
   - anthropic-memory
   - obsidian
+
+custom_tools:
+  - citation-fetcher
