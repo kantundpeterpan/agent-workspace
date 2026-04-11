@@ -82,13 +82,6 @@ CUSTOM_STYLE = Style([
     ("instruction", "fg:#888888"),
 ])
 
-SCOPE_DESCRIPTIONS = {
-    "coding": "Code review, refactoring, testing, deployment — software engineering",
-    "stats":  "EDA, classical & Bayesian modelling, ML, causal inference, time series",
-    "university": "Reports, presentations, literature, lecture notes, Obsidian vault",
-    "study":  "Flashcards, revision planning, exam coaching, concept explanation",
-}
-
 LANGUAGE_DESCRIPTIONS = {
     "python": "Python only (pandas, statsmodels, PyMC, scikit-learn…)",
     "r":      "R only (tidyverse, lme4, brms, forecast…)",
@@ -107,6 +100,30 @@ TARGET_DESCRIPTIONS = {
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _load_scope_meta(workspace: Path) -> Dict[str, Dict]:
+    """Load metadata for every scope from its YAML file.
+
+    Returns a dict keyed by scope name::
+
+        {
+          "stats": {
+            "description": "Data science and statistics ...",
+            "requires_language": True,
+          },
+          ...
+        }
+    """
+    meta: Dict[str, Dict] = {}
+    for path in sorted((workspace / "core" / "scopes").glob("*.yaml")):
+        with open(path) as f:
+            data = yaml.safe_load(f) or {}
+        meta[path.stem] = {
+            "description":       data.get("description", ""),
+            "requires_language": bool(data.get("requires_language", False)),
+        }
+    return meta
+
+
 def _find_workspace_root() -> Path:
     """Walk up from the current file to find the workspace root."""
     candidate = Path(__file__).resolve().parent.parent
@@ -124,7 +141,8 @@ def _find_workspace_root() -> Path:
 
 
 def _load_available_items(workspace: Path) -> Dict[str, List[str]]:
-    """Discover available agents, skills, commands, and scopes."""
+    """Discover available agents, skills, commands, scopes, and custom tools."""
+    tools_dir = workspace / "core" / "tools"
     return {
         "scopes": sorted(p.stem for p in (workspace / "core" / "scopes").glob("*.yaml")),
         "agents": sorted(p.stem for p in (workspace / "core" / "agents").glob("*.yaml")),
@@ -135,12 +153,13 @@ def _load_available_items(workspace: Path) -> Dict[str, List[str]]:
         "mcp_servers": sorted(
             p.stem for p in (workspace / "core" / "mcp-servers").glob("*.json")
         ),
+        "tools": sorted(p.name for p in tools_dir.iterdir() if p.is_dir()) if tools_dir.is_dir() else [],
     }
 
 
-def _scope_needs_language(scopes: List[str]) -> bool:
-    """Return True if any selected scope includes stats/DS agents."""
-    return bool(set(scopes) & {"stats", "university", "study"})
+def _scope_needs_language(scopes: List[str], scope_meta: Dict[str, Dict]) -> bool:
+    """Return True if any selected scope has requires_language: true in its YAML."""
+    return any(scope_meta.get(s, {}).get("requires_language", False) for s in scopes)
 
 
 def _create_symlink(src: Path, dst: Path, dry_run: bool = False) -> None:
@@ -246,7 +265,7 @@ def _save_config(config: Dict, path: Path, dry_run: bool) -> None:
     to_save = {
         k: v for k, v in config.items()
         if not k.startswith("_") and not (
-            k in ("scopes", "agents", "skills", "commands", "mcp_servers") and v is None
+            k in ("scopes", "agents", "skills", "commands", "mcp_servers", "tools") and v is None
         )
     }
     with open(path, "w") as f:
@@ -268,7 +287,7 @@ def _load_config(path: Path) -> Optional[Dict]:
         return None
     with open(path) as f:
         cfg = yaml.safe_load(f) or {}
-    for key in ("scopes", "agents", "skills", "commands", "mcp_servers"):
+    for key in ("scopes", "agents", "skills", "commands", "mcp_servers", "tools"):
         if key not in cfg:
             cfg[key] = None          # absent → no constraint
         else:
@@ -296,29 +315,33 @@ def _default_config() -> Dict:
         "skills":      None,
         "commands":    None,
         "mcp_servers": None,
+        "tools":       None,
     }
 
 
 # Category name → config key mapping
 _CATEGORY_MAP: Dict[str, str] = {
-    "agent":    "agents",
-    "agents":   "agents",
-    "skill":    "skills",
-    "skills":   "skills",
-    "command":  "commands",
-    "commands": "commands",
-    "mcp":      "mcp_servers",
+    "agent":       "agents",
+    "agents":      "agents",
+    "skill":       "skills",
+    "skills":      "skills",
+    "command":     "commands",
+    "commands":    "commands",
+    "mcp":         "mcp_servers",
     "mcp_servers": "mcp_servers",
-    "scope":    "scopes",
-    "scopes":   "scopes",
+    "tool":        "tools",
+    "tools":       "tools",
+    "scope":       "scopes",
+    "scopes":      "scopes",
 }
 
-# Category singular label → available key in _load_available_items()
+# Category config key → available key in _load_available_items()
 _AVAILABLE_KEY: Dict[str, str] = {
     "agents":      "agents",
     "skills":      "skills",
     "commands":    "commands",
     "mcp_servers": "mcp_servers",
+    "tools":       "tools",
     "scopes":      "scopes",
 }
 
@@ -326,7 +349,8 @@ _AVAILABLE_KEY: Dict[str, str] = {
 def _scope_items(workspace: Path, scope_names: List[str]) -> Dict[str, Set[str]]:
     """Return the union of all items brought in by the given scopes."""
     result: Dict[str, Set[str]] = {
-        "agents": set(), "skills": set(), "commands": set(), "mcp_servers": set()
+        "agents": set(), "skills": set(), "commands": set(),
+        "mcp_servers": set(), "tools": set(),
     }
     scopes_dir = workspace / "core" / "scopes"
     for name in scope_names:
@@ -335,9 +359,12 @@ def _scope_items(workspace: Path, scope_names: List[str]) -> Dict[str, Set[str]]
             continue
         with open(path) as f:
             data = yaml.safe_load(f) or {}
-        for key in result:
+        for key in ("agents", "skills", "commands", "mcp_servers"):
             for item in data.get(key, []):
                 result[key].add(item)
+        # custom_tools in scope YAML maps to "tools" config key
+        for item in data.get("custom_tools", []):
+            result["tools"].add(item)
     return result
 
 
