@@ -462,14 +462,15 @@ def run_wizard(workspace: Path, available: Dict) -> Dict:
         border_style="cyan",
     ))
 
+    scope_meta = _load_scope_meta(workspace)
+
     # 1. Scopes
     scope_choices = [
         questionary.Choice(
-            title=f"{name:12s}  {desc}",
+            title=f"{name:12s}  {scope_meta.get(name, {}).get('description', '')}",
             value=name,
         )
-        for name, desc in SCOPE_DESCRIPTIONS.items()
-        if name in available["scopes"]
+        for name in available["scopes"]
     ]
     selected_scopes: List[str] = questionary.checkbox(
         "Which scopes do you want to install?",
@@ -482,7 +483,7 @@ def run_wizard(workspace: Path, available: Dict) -> Dict:
 
     # 2. Language (only if stats/university/study selected)
     language = "python"
-    if _scope_needs_language(selected_scopes):
+    if _scope_needs_language(selected_scopes, scope_meta):
         lang_choices = [
             questionary.Choice(title=f"{k:8s} {v}", value=k)
             for k, v in LANGUAGE_DESCRIPTIONS.items()
