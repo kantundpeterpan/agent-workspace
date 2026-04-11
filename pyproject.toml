@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-workspace"
+version = "0.1.0"
+description = "Tool-agnostic AI agent configuration hub that transpiles to OpenCode, Continue.dev, and Claude Code"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+keywords = ["agents", "ai", "opencode", "continue", "claude", "llm", "mcp"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+
+dependencies = [
+    "pyyaml>=6.0",
+    "jsonschema>=4.0.0",
+    "requests>=2.28.0",
+    "questionary>=2.0.1",
+    "rich>=13.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+agent-workspace = "scripts.workspace:main"
+
+[project.urls]
+Homepage = "https://github.com/kantundpeterpan/agent-workspace"
+Repository = "https://github.com/kantundpeterpan/agent-workspace"
+Issues = "https://github.com/kantundpeterpan/agent-workspace/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scripts*", "build*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.json", "*.md", "*.py", "*.sh", "*.js", "*.ts"]
