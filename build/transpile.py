@@ -9,7 +9,7 @@ import json
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional, Set
 
 import requests
 import jsonschema
@@ -35,6 +35,29 @@ def load_agent(agent_path: Path) -> Dict:
     """Load an agent definition."""
     with open(agent_path) as f:
         return yaml.safe_load(f)
+
+
+def load_language_overlay(languages_dir: Path, language: str, agent_name: str) -> Optional[Dict]:
+    """Load a language-specific overlay for an agent (returns None if not found)."""
+    if not language or language == "python":
+        return None
+    overlay_path = languages_dir / language / f"{agent_name}.yaml"
+    if not overlay_path.exists():
+        return None
+    with open(overlay_path) as f:
+        return yaml.safe_load(f)
+
+
+def apply_language_overlay(agent_data: Dict, overlay: Optional[Dict]) -> Dict:
+    """Merge a language overlay into agent data (system_prompt + custom_tools)."""
+    if not overlay:
+        return agent_data
+    merged = dict(agent_data)
+    if "system_prompt" in overlay:
+        merged["system_prompt"] = overlay["system_prompt"]
+    if "custom_tools" in overlay:
+        merged["custom_tools"] = overlay["custom_tools"]
+    return merged
 
 
 def load_mcp_server(server_path: Path) -> Dict:
@@ -79,7 +102,14 @@ def load_command(command_path: Path) -> Dict:
         return yaml.safe_load(f)
 
 
-def generate_opencode_config(core_path: Path, output_path: Path) -> Dict:
+def generate_opencode_config(
+    core_path: Path,
+    output_path: Path,
+    agent_filter: Optional[Set[str]] = None,
+    command_filter: Optional[Set[str]] = None,
+    skill_filter: Optional[Set[str]] = None,
+    language: str = "python",
+) -> Dict:
     """Generate OpenCode configuration."""
     config = {
         "$schema": "https://opencode.ai/config.json",
@@ -99,10 +129,19 @@ def generate_opencode_config(core_path: Path, output_path: Path) -> Dict:
 
     # Load agents
     agents_path = core_path / "agents"
+    languages_dir = core_path / "languages"
     if agents_path.exists():
         for agent_file in agents_path.glob("*.yaml"):
             agent_data = load_agent(agent_file)
             name = agent_data.get("name", agent_file.stem)
+
+            # Apply scope filter
+            if agent_filter is not None and name not in agent_filter:
+                continue
+
+            # Apply language overlay
+            overlay = load_language_overlay(languages_dir, language, name)
+            agent_data = apply_language_overlay(agent_data, overlay)
 
             # Generate Markdown file
             _generate_opencode_agent_markdown(agent_data, name, output_path)
@@ -111,12 +150,16 @@ def generate_opencode_config(core_path: Path, output_path: Path) -> Dict:
     # Load commands
     commands_path = core_path / "commands"
     if commands_path.exists():
-        generate_opencode_commands(core_path, output_path)
+        generate_opencode_commands(core_path, output_path, command_filter=command_filter)
 
     return config
 
 
-def generate_opencode_commands(core_path: Path, output_path: Path) -> None:
+def generate_opencode_commands(
+    core_path: Path,
+    output_path: Path,
+    command_filter: Optional[Set[str]] = None,
+) -> None:
     """Generate OpenCode modular command files."""
     commands_dir = output_path / "commands"
     commands_dir.mkdir(parents=True, exist_ok=True)
@@ -126,7 +169,9 @@ def generate_opencode_commands(core_path: Path, output_path: Path) -> None:
         command_data = load_command(command_file)
         name = command_data.get("name", command_file.stem)
 
-        # Build frontmatter
+        # Apply command filter
+        if command_filter is not None and name not in command_filter:
+            continue
         frontmatter = {
             "description": command_data.get("description", ""),
         }
@@ -277,7 +322,13 @@ def fetch_json_schema(url: str) -> Dict:
     return r.json()
 
 
-def generate_continue_config(core_path: Path) -> Dict:
+def generate_continue_config(
+    core_path: Path,
+    agent_filter: Optional[Set[str]] = None,
+    command_filter: Optional[Set[str]] = None,
+    mcp_filter: Optional[Set[str]] = None,
+    language: str = "python",
+) -> Dict:
     """Generate Continue.dev configuration."""
     config = {
         "name": "Agent Workspace",
@@ -295,6 +346,8 @@ def generate_continue_config(core_path: Path) -> Dict:
         for server_file in mcp_path.glob("*.json"):
             server = load_mcp_server(server_file)
             name = server.pop("name", server_file.stem)
+            if mcp_filter is not None and name not in mcp_filter:
+                continue
             server_type = server.pop("type", "local")
 
             if server_type == "local":
@@ -314,13 +367,21 @@ def generate_continue_config(core_path: Path) -> Dict:
 
     # Load agents as prompts
     agents_path = core_path / "agents"
+    languages_dir = core_path / "languages"
     if agents_path.exists():
         for agent_file in agents_path.glob("*.yaml"):
             agent = load_agent(agent_file)
+            name = agent.get("name", agent_file.stem)
+
+            if agent_filter is not None and name not in agent_filter:
+                continue
+
+            overlay = load_language_overlay(languages_dir, language, name)
+            agent = apply_language_overlay(agent, overlay)
 
             config["prompts"].append(
                 {
-                    "name": agent.get("name", agent_file.stem),
+                    "name": name,
                     "description": agent.get("description", ""),
                     "prompt": agent.get("system_prompt", ""),
                 }
@@ -338,17 +399,31 @@ def generate_continue_config(core_path: Path) -> Dict:
     return config
 
 
-def generate_claude_config(core_path: Path, output_path: Path) -> str:
+def generate_claude_config(
+    core_path: Path,
+    output_path: Path,
+    agent_filter: Optional[Set[str]] = None,
+    command_filter: Optional[Set[str]] = None,
+    language: str = "python",
+) -> str:
     """Generate Claude Code CLAUDE.md."""
     sections = ["# Agent Workspace for Claude Code\n"]
 
     # Add agent definitions
     agents_path = core_path / "agents"
+    languages_dir = core_path / "languages"
     if agents_path.exists():
         for agent_file in agents_path.glob("*.yaml"):
             agent = load_agent(agent_file)
+            name = agent.get("name", agent_file.stem)
 
-            sections.append(f"## {agent.get('name', agent_file.stem)}\n")
+            if agent_filter is not None and name not in agent_filter:
+                continue
+
+            overlay = load_language_overlay(languages_dir, language, name)
+            agent = apply_language_overlay(agent, overlay)
+
+            sections.append(f"## {name}\n")
             sections.append(f"**Description:** {agent.get('description', '')}\n")
 
             if "system_prompt" in agent:
@@ -382,12 +457,14 @@ def generate_claude_config(core_path: Path, output_path: Path) -> str:
         for command_file in sorted(commands_path.glob("*.yaml")):
             command = load_command(command_file)
             name = command.get("name", command_file.stem)
+            if command_filter is not None and name not in command_filter:
+                continue
             desc = command.get("description", "")
             sections.append(f"- `/{name}`: {desc}\n")
         sections.append("\n")
 
         # Also generate modular command files
-        generate_claude_commands(core_path, output_path)
+        generate_claude_commands(core_path, output_path, command_filter=command_filter)
 
     # Add rules
     rules_path = core_path / "rules"
@@ -410,7 +487,11 @@ def generate_claude_config(core_path: Path, output_path: Path) -> str:
     return "\n".join(sections)
 
 
-def generate_claude_commands(core_path: Path, output_path: Path) -> None:
+def generate_claude_commands(
+    core_path: Path,
+    output_path: Path,
+    command_filter: Optional[Set[str]] = None,
+) -> None:
     """Generate Claude Code modular command files."""
     commands_dir = output_path / ".claude" / "commands"
     commands_dir.mkdir(parents=True, exist_ok=True)
@@ -419,6 +500,9 @@ def generate_claude_commands(core_path: Path, output_path: Path) -> None:
     for command_file in commands_path.glob("*.yaml"):
         command_data = load_command(command_file)
         name = command_data.get("name", command_file.stem)
+
+        if command_filter is not None and name not in command_filter:
+            continue
 
         # Build frontmatter
         frontmatter = {
@@ -436,7 +520,11 @@ def generate_claude_commands(core_path: Path, output_path: Path) -> None:
         print(f"    ✅ Generated Claude command: {name}")
 
 
-def copy_skills(core_path: Path, output_path: Path) -> None:
+def copy_skills(
+    core_path: Path,
+    output_path: Path,
+    skill_filter: Optional[Set[str]] = None,
+) -> None:
     """Copy skills to output directory."""
     import shutil
 
@@ -446,7 +534,13 @@ def copy_skills(core_path: Path, output_path: Path) -> None:
     if skills_src.exists():
         if skills_dst.exists():
             shutil.rmtree(skills_dst)
-        shutil.copytree(skills_src, skills_dst)
+        if skill_filter is None:
+            shutil.copytree(skills_src, skills_dst)
+        else:
+            skills_dst.mkdir(parents=True, exist_ok=True)
+            for skill_dir in skills_src.iterdir():
+                if skill_dir.is_dir() and skill_dir.name in skill_filter:
+                    shutil.copytree(skill_dir, skills_dst / skill_dir.name)
         print(f"  📁 Copied skills to {skills_dst}")
 
 
@@ -487,7 +581,16 @@ def validate_agent_frontmatter(
     return errors
 
 
-def transpile(target: str, core_path: Path, output_path: Path) -> bool:
+def transpile(
+    target: str,
+    core_path: Path,
+    output_path: Path,
+    agent_filter: Optional[Set[str]] = None,
+    command_filter: Optional[Set[str]] = None,
+    skill_filter: Optional[Set[str]] = None,
+    mcp_filter: Optional[Set[str]] = None,
+    language: str = "python",
+) -> bool:
     """Transpile core definitions to target platform."""
     print(f"\n🔨 Transpiling to {target}...\n")
 
@@ -495,7 +598,13 @@ def transpile(target: str, core_path: Path, output_path: Path) -> bool:
 
     try:
         if target == "opencode":
-            config = generate_opencode_config(core_path, output_path)
+            config = generate_opencode_config(
+                core_path, output_path,
+                agent_filter=agent_filter,
+                command_filter=command_filter,
+                skill_filter=skill_filter,
+                language=language,
+            )
 
             # Normalize the generated config to avoid embedding non-schema
             # fields (metadata, notes, etc.). Collect warnings for user info.
@@ -572,25 +681,36 @@ def transpile(target: str, core_path: Path, output_path: Path) -> bool:
                 print(f"  ⚠️  Some tools failed to transpile")
 
             # Copy skills
-            copy_skills(core_path, output_path)
+            copy_skills(core_path, output_path, skill_filter=skill_filter)
 
         elif target == "continue":
-            config = generate_continue_config(core_path)
+            config = generate_continue_config(
+                core_path,
+                agent_filter=agent_filter,
+                command_filter=command_filter,
+                mcp_filter=mcp_filter,
+                language=language,
+            )
             with open(output_path / "config.yaml", "w") as f:
                 yaml.dump(config, f, default_flow_style=False, sort_keys=False)
             print(f"  ✅ Generated config.yaml")
 
             # Copy skills
-            copy_skills(core_path, output_path)
+            copy_skills(core_path, output_path, skill_filter=skill_filter)
 
         elif target == "claude":
-            config = generate_claude_config(core_path, output_path)
+            config = generate_claude_config(
+                core_path, output_path,
+                agent_filter=agent_filter,
+                command_filter=command_filter,
+                language=language,
+            )
             with open(output_path / "CLAUDE.md", "w") as f:
                 f.write(config)
             print(f"  ✅ Generated CLAUDE.md")
 
             # Copy skills
-            copy_skills(core_path, output_path)
+            copy_skills(core_path, output_path, skill_filter=skill_filter)
 
         else:
             print(f"  ❌ Unknown target: {target}")
@@ -616,11 +736,36 @@ def main():
     )
     parser.add_argument("--input", default="core/", help="Input directory")
     parser.add_argument("--output", required=True, help="Output directory")
+    parser.add_argument(
+        "--language", default="python", choices=["python", "r", "both"],
+        help="Language variant for stats/DS agent system prompts (default: python)"
+    )
+    parser.add_argument(
+        "--agents", nargs="*", metavar="AGENT",
+        help="Restrict to specific agent names (default: all)"
+    )
+    parser.add_argument(
+        "--commands", nargs="*", metavar="COMMAND",
+        help="Restrict to specific command names (default: all)"
+    )
+    parser.add_argument(
+        "--skills", nargs="*", metavar="SKILL",
+        help="Restrict to specific skill names (default: all)"
+    )
+    parser.add_argument(
+        "--mcp-servers", nargs="*", metavar="MCP",
+        help="Restrict to specific MCP server names (default: all)"
+    )
 
     args = parser.parse_args()
 
     core_path = Path(args.input)
     output_path = Path(args.output)
+
+    agent_filter = set(args.agents) if args.agents else None
+    command_filter = set(args.commands) if args.commands else None
+    skill_filter = set(args.skills) if args.skills else None
+    mcp_filter = set(args.mcp_servers) if args.mcp_servers else None
 
     if args.target == "all":
         targets = ["opencode", "continue", "claude"]
@@ -636,7 +781,14 @@ def main():
         else:
             target_output = output_path / target
 
-        if not transpile(target, core_path, target_output):
+        if not transpile(
+            target, core_path, target_output,
+            agent_filter=agent_filter,
+            command_filter=command_filter,
+            skill_filter=skill_filter,
+            mcp_filter=mcp_filter,
+            language=args.language,
+        ):
             all_success = False
 
     sys.exit(0 if all_success else 1)
