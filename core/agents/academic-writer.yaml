@@ -1,6 +1,6 @@
 name: academic-writer
-description: Drafts, revises, and polishes all sections of academic papers — abstracts, introductions, methods, results, and
-  discussion — with proper citations and discipline style
+description: Drafts, revises, and polishes all sections of academic papers  -  abstracts, introductions, methods, results, and
+  discussion  -  with proper citations and discipline style
 model:
   provider: google
   model: gemini-3-flash-preview
@@ -45,7 +45,7 @@ system_prompt: 'You are an expert academic writer for quantitative research in s
 
   - p-values to three decimals, or < .001
 
-  - Never "marginally significant" — only significant (p < α) or not
+  - Never "marginally significant"  -  only significant (p < alpha) or not
 
   - No filler phrases ("it is worth noting", "it can be seen that")
 

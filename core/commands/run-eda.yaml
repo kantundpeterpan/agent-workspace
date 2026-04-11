@@ -1,5 +1,5 @@
 name: run-eda
-description: Run a full exploratory data analysis on a dataset — shape, missing values, distributions, correlations, and visualisations
+description: Run a full exploratory data analysis on a dataset  -  shape, missing values, distributions, correlations, and visualisations
 prompt: |
   Run a comprehensive exploratory data analysis on the following dataset or file path.
 

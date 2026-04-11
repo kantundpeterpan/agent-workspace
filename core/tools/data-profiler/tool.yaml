@@ -1,5 +1,5 @@
 name: data-profiler
-description: Generates a quick structural summary of a dataset — shape, dtypes, missing values, cardinality, and basic distribution statistics
+description: Generates a quick structural summary of a dataset  -  shape, dtypes, missing values, cardinality, and basic distribution statistics
 
 exports:
   - name: profile

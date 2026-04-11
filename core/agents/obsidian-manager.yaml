@@ -1,5 +1,5 @@
 name: obsidian-manager
-description: Navigates and manages an Obsidian vault — creates notes with proper YAML front-matter, updates MOCs, runs Dataview queries, and maintains the link graph
+description: Navigates and manages an Obsidian vault  -  creates notes with proper YAML front-matter, updates MOCs, runs Dataview queries, and maintains the link graph
 
 model:
   provider: google

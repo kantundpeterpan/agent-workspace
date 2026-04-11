@@ -1,5 +1,5 @@
 name: document-dataset
-description: Generate a structured data dictionary and README for a dataset — column names, types, ranges, missing values, provenance
+description: Generate a structured data dictionary and README for a dataset  -  column names, types, ranges, missing values, provenance
 prompt: |
   Generate complete documentation for the following dataset.
 

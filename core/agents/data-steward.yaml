@@ -1,5 +1,5 @@
 name: data-steward
-description: Locates, downloads, profiles, and documents research datasets — generating data cards covering provenance, schema, quality, missingness, and ethical considerations
+description: Locates, downloads, profiles, and documents research datasets  -  generating data cards covering provenance, schema, quality, missingness, and ethical considerations
 
 model:
   provider: google

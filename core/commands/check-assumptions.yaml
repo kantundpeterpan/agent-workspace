@@ -1,5 +1,5 @@
 name: check-assumptions
-description: Check statistical model assumptions — normality, homoscedasticity, independence, linearity — and report violations with diagnostic plots
+description: Check statistical model assumptions  -  normality, homoscedasticity, independence, linearity  -  and report violations with diagnostic plots
 prompt: |
   Check the statistical assumptions for the following model or test result.
 

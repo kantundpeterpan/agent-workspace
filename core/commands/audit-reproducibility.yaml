@@ -1,5 +1,5 @@
 name: audit-reproducibility
-description: Audit a project for reproducibility — environment pinning, relative paths, random seeds, clean-run verification
+description: Audit a project for reproducibility  -  environment pinning, relative paths, random seeds, clean-run verification
 prompt: |
   Perform a reproducibility audit on the following project directory or file.
 

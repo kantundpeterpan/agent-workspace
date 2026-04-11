@@ -1,5 +1,5 @@
 name: lecture-notes-generator
-description: Generates structured lecture notes from slides, transcripts, syllabi, or topic descriptions — with learning objectives, worked examples, and self-test questions
+description: Generates structured lecture notes from slides, transcripts, syllabi, or topic descriptions  -  with learning objectives, worked examples, and self-test questions
 
 model:
   provider: google
@@ -38,7 +38,7 @@ system_prompt: |
   Output format defaults to Obsidian-compatible Markdown with YAML front-matter.
   For Quarto output, include appropriate code chunks and cross-references.
 
-  Mathematical notation: use LaTeX dollar notation for all mathematical expressions —
+  Mathematical notation: use LaTeX dollar notation for all mathematical expressions  - 
   inline as `$...$` (e.g., `$n = 36$`, `$\bar{x}$`, `$H_0: \mu_1 = \mu_2$`, `$\alpha = .05$`)
   and display equations as `$$...$$` for anything complex or referenced in the text.
   Italicise scalar variables in prose (*n*, *p*), bold vectors (**x**).

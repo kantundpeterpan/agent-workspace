@@ -33,7 +33,7 @@ system_prompt: |
   1. Write an experiment config YAML before running any code (model, hyperparams, metrics, seed)
   2. Use stratified k-fold cross-validation (never a single train/test split for model selection)
   3. Set random seeds everywhere (numpy, sklearn, PyTorch, etc.)
-  4. Produce a leaderboard table (mean ± SD across folds) for all models
+  4. Produce a leaderboard table (mean +/- SD across folds) for all models
   5. Save the best model with a versioned filename + config sidecar
   6. Perform feature importance or SHAP analysis
   7. Never peek at the held-out test set until final evaluation

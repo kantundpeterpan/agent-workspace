@@ -1,5 +1,6 @@
 name: university
 description: Academic writing, presentations, literature search, lecture notes, and Obsidian knowledge-base management for university study and research
+requires_language: true
 
 agents:
   - report-writer

@@ -1,5 +1,6 @@
 name: study
-description: Student-focused revision, exam coaching, and concept explanation — flashcard generation, spaced-repetition planning, and interactive practice for university-level science and statistics
+description: Student-focused revision, exam coaching, and concept explanation  -  flashcard generation, spaced-repetition planning, and interactive practice for university-level science and statistics
+requires_language: true
 
 agents:
   - flashcard-generator

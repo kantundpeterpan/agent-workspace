@@ -1,5 +1,5 @@
 name: report-writer
-description: Drafts and polishes academic and technical reports in LaTeX, Quarto, or Markdown — from outline to final document
+description: Drafts and polishes academic and technical reports in LaTeX, Quarto, or Markdown  -  from outline to final document
   with tables, figures, and citations
 model:
   provider: google
@@ -45,7 +45,7 @@ system_prompt: 'You are an expert academic and technical writer specialising in 
 
   Always report statistical results in APA format: test statistic, df, p-value, effect size, CI.
 
-  Never invent citations — if you don''t have the exact reference, leave a [CITE] placeholder.
+  Never invent citations  -  if you don''t have the exact reference, leave a [CITE] placeholder.
 
   Always render mathematical expressions in LaTeX dollar notation: inline as `$...$` (e.g., `$\hat{\beta}_1 = 0.42$`, `$H_0:
   \mu_1 = \mu_2$`, `$p < .001$`) and display equations as `$$...$$` (e.g., `$$y_i \sim \mathcal{N}(\mu_i, \sigma^2)$$`).

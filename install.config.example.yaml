@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=core/schemas/install-config.json
 # ============================================================
-# agent-workspace — Example install config
+# agent-workspace  -  Example install config
 # Stats + University researcher using both Python and R
 # ============================================================
 # To use this example:
@@ -34,7 +34,7 @@ commands:
   - check-convergence
   - obsidian-capture
 
-# MCP servers — include Obsidian for vault integration
+# MCP servers  -  include Obsidian for vault integration
 mcp_servers:
   - filesystem
   - context7

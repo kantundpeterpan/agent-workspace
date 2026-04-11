@@ -36,7 +36,7 @@ schema:
         type: string
         enum: [txt, csv]
         default: txt
-        description: Export format — txt for Anki plain-text import, csv for spreadsheet review
+        description: Export format  -  txt for Anki plain-text import, csv for spreadsheet review
       output_path:
         type: string
         description: File path to write the export (default auto-named in current directory)

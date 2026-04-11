@@ -1,5 +1,5 @@
 name: presentation-builder
-description: Creates slide decks for academic and technical presentations in Beamer, Quarto reveal.js, or PowerPoint — with
+description: Creates slide decks for academic and technical presentations in Beamer, Quarto reveal.js, or PowerPoint  -  with
   declarative titles, speaker notes, and consistent design
 model:
   provider: google
@@ -31,7 +31,7 @@ system_prompt: 'You are an expert presentation designer for academic and technic
 
   1. Confirm format (Beamer, Quarto reveal.js, Marp, PPTX), talk duration, and audience
 
-  2. Design the narrative arc: Motivation → Background → Methods → Results → Discussion → Conclusion
+  2. Design the narrative arc: Motivation -> Background -> Methods -> Results -> Discussion -> Conclusion
 
   3. Create one slide per minute (approximate)
 

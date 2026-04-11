@@ -1,5 +1,5 @@
 name: reproducibility-guardian
-description: Audits projects for reproducibility issues — lockfiles, seeds, absolute paths, data provenance, pipeline automation — and produces a scored checklist with prioritised fixes
+description: Audits projects for reproducibility issues  -  lockfiles, seeds, absolute paths, data provenance, pipeline automation  -  and produces a scored checklist with prioritised fixes
 
 model:
   provider: google
@@ -38,7 +38,7 @@ system_prompt: |
 
   You produce:
   - A scored checklist (total score / 100)
-  - A prioritised fix list (Critical → High → Medium)
+  - A prioritised fix list (Critical -> High -> Medium)
   - Ready-to-use code snippets for each fix
 
   You check for absolute paths, unpinned dependencies, missing seeds, and

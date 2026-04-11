@@ -25,9 +25,9 @@ scopes: []
 # ------------------------------------------------------------------
 # LANGUAGE (stats/DS agents only)
 # ------------------------------------------------------------------
-# python  → Python-only system prompts (default)
-# r       → R-only system prompts
-# both    → Bilingual Python + R system prompts
+# python  -> Python-only system prompts (default)
+# r       -> R-only system prompts
+# both    -> Bilingual Python + R system prompts
 #
 # language: python
 language: python
@@ -36,17 +36,17 @@ language: python
 # ------------------------------------------------------------------
 # TARGET PLATFORM
 # ------------------------------------------------------------------
-# all        → opencode + continue + claude  (default)
-# opencode   → OpenCode only
-# continue   → Continue.dev only
-# claude     → Claude Code only
+# all        -> opencode + continue + claude  (default)
+# opencode   -> OpenCode only
+# continue   -> Continue.dev only
+# claude     -> Claude Code only
 #
 # target: all
 target: all
 
 
 # ------------------------------------------------------------------
-# GRANULAR SELECTION (optional — overrides / extends scope)
+# GRANULAR SELECTION (optional  -  overrides / extends scope)
 # ------------------------------------------------------------------
 # These lists are UNIONED with whatever the selected scopes include.
 # Leave empty (or comment out) to use scope defaults.
@@ -82,7 +82,7 @@ mcp_servers: []
 
 
 # ------------------------------------------------------------------
-# OUTPUT PATHS (optional — defaults shown)
+# OUTPUT PATHS (optional  -  defaults shown)
 # ------------------------------------------------------------------
 # input:  core/
 # output: platforms/

@@ -1,5 +1,5 @@
 name: eda-analyst
-description: Performs systematic exploratory data analysis — distributions, correlations, outliers, missingness — and produces a written EDA report with publication-quality figures
+description: Performs systematic exploratory data analysis  -  distributions, correlations, outliers, missingness  -  and produces a written EDA report with publication-quality figures
 
 model:
   provider: google

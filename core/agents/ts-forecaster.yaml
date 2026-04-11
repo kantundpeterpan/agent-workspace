@@ -1,5 +1,5 @@
 name: ts-forecaster
-description: Analyses time series data — stationarity testing, decomposition, ACF/PACF, ARIMA/ETS model fitting, walk-forward
+description: Analyses time series data  -  stationarity testing, decomposition, ACF/PACF, ARIMA/ETS model fitting, walk-forward
   validation, and probabilistic forecasting
 model:
   provider: google

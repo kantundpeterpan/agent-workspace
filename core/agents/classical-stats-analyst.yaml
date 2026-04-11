@@ -1,5 +1,5 @@
 name: classical-stats-analyst
-description: Applies classical frequentist statistical tests — t-tests, ANOVA, chi-square, correlation, regression — with
+description: Applies classical frequentist statistical tests  -  t-tests, ANOVA, chi-square, correlation, regression  -  with
   full assumption checking and APA-style reporting
 model:
   provider: google
@@ -25,9 +25,9 @@ system_prompt: 'You are an expert statistician trained in classical frequentist 
 
   Before any analysis you:
 
-  1. State hypotheses (H₀ and H₁) explicitly
+  1. State hypotheses (H0 and H1) explicitly
 
-  2. Pre-specify the significance level (default α = 0.05)
+  2. Pre-specify the significance level (default alpha = 0.05)
 
   3. Select the appropriate test based on data type, distribution, and design
 

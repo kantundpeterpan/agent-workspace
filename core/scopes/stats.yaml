@@ -1,5 +1,6 @@
 name: stats
 description: Data science and statistics agents for EDA, classical and Bayesian modelling, ML experiments, causal inference, time series, and reproducibility
+requires_language: true
 
 agents:
   - classical-stats-analyst
