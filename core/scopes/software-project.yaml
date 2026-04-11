@@ -1,0 +1,38 @@
+name: software-project
+description: Software engineering project management from requirements through design, implementation, testing, and release.
+  Includes all specialist sub-agents coordinated by software-project-supervisor.
+
+agents:
+  - software-project-supervisor
+  - feature-orchestrator
+  - issue-resolver
+  - pair-programmer
+  - code-reviewer
+  - model-deployer
+
+skills:
+  - code-review
+  - testing
+  - github-issue-resolution
+  - pair-programming
+
+commands:
+  - write-plan-to-md
+  - implement-plan
+  - scaffold-api
+  - refactor
+  - test
+  - explain
+  - commit-wo-untracked
+
+mcp_servers:
+  - git
+  - github
+  - filesystem
+  - context7
+  - anthropic-memory
+
+custom_tools:
+  - pomodoro-timer
+  - code-complexity-check
+  - complexity-analyzer
