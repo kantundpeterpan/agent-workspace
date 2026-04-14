@@ -32,6 +32,7 @@ from transpile import transpile  # noqa: E402
 # Scope loading
 # ---------------------------------------------------------------------------
 
+
 def load_scope(scopes_dir: Path, scope_name: str) -> Dict:
     """Load a single scope manifest."""
     path = scopes_dir / f"{scope_name}.yaml"
@@ -67,6 +68,7 @@ def merge_scopes(scopes_dir: Path, scope_names: List[str]) -> Dict:
 # Config file loading
 # ---------------------------------------------------------------------------
 
+
 def load_install_config(config_path: Path) -> Dict:
     """Load and validate an install config YAML file.
 
@@ -83,15 +85,22 @@ def load_install_config(config_path: Path) -> Dict:
     if cfg is None:
         cfg = {}
 
-    for key in ("scopes", "agents", "skills", "commands", "mcp_servers", "custom_tools"):
+    for key in (
+        "scopes",
+        "agents",
+        "skills",
+        "commands",
+        "mcp_servers",
+        "custom_tools",
+    ):
         if key not in cfg:
-            cfg[key] = None                          # absent → no constraint
+            cfg[key] = None  # absent → no constraint
         else:
             val = cfg[key]
             if val is None or val == "all" or val == ["all"]:
-                cfg[key] = None                      # explicit "all" or null
+                cfg[key] = None  # explicit "all" or null
             elif isinstance(val, str):
-                cfg[key] = [val]                     # single-item shorthand
+                cfg[key] = [val]  # single-item shorthand
             # else: keep val as-is ([] or a proper list)
 
     if "language" not in cfg:
@@ -106,6 +115,7 @@ def load_install_config(config_path: Path) -> Dict:
 # ---------------------------------------------------------------------------
 # Filter resolution
 # ---------------------------------------------------------------------------
+
 
 def resolve_filters(
     core_path: Path,
@@ -138,7 +148,9 @@ def resolve_filters(
     # 1. Merge scopes (from config or direct args)
     effective_scopes = list(scopes or [])
     if config:
-        effective_scopes = list(dict.fromkeys(effective_scopes + (config.get("scopes") or [])))
+        effective_scopes = list(
+            dict.fromkeys(effective_scopes + (config.get("scopes") or []))
+        )
 
     if effective_scopes:
         merged = merge_scopes(scopes_dir, effective_scopes)
@@ -152,28 +164,30 @@ def resolve_filters(
     #    None   → no change (absent from config)
     #    []     → override to empty set (install nothing for this category)
     #    [...]  → union with scope-derived filter (or replace if None)
-    def _apply(current: Optional[Set[str]], items: Optional[List[str]]) -> Optional[Set[str]]:
+    def _apply(
+        current: Optional[Set[str]], items: Optional[List[str]]
+    ) -> Optional[Set[str]]:
         if items is None:
-            return current          # absent: no change
+            return current  # absent: no change
         if not items:
-            return set()            # explicit empty: install nothing
+            return set()  # explicit empty: install nothing
         if current is None:
-            return set(items)       # no scope filter -> use explicit list as the filter
-        current.update(items)       # union with scope
+            return set(items)  # no scope filter -> use explicit list as the filter
+        current.update(items)  # union with scope
         return current
 
     if config:
-        agent_filter   = _apply(agent_filter,   config.get("agents"))
-        skill_filter   = _apply(skill_filter,   config.get("skills"))
+        agent_filter = _apply(agent_filter, config.get("agents"))
+        skill_filter = _apply(skill_filter, config.get("skills"))
         command_filter = _apply(command_filter, config.get("commands"))
-        mcp_filter     = _apply(mcp_filter,     config.get("mcp_servers"))
+        mcp_filter = _apply(mcp_filter, config.get("mcp_servers"))
         # config uses "tools" key; scope YAML uses "custom_tools".
         # Use an explicit None check so that an empty list ([]) is not
         # swallowed by the truthiness of `or` ([] is falsy in Python).
         _tools = config.get("tools")
         if _tools is None:
             _tools = config.get("custom_tools")
-        tool_filter    = _apply(tool_filter,    _tools)
+        tool_filter = _apply(tool_filter, _tools)
 
         language = config.get("language", "python")
         target = config.get("target", "all")
@@ -185,13 +199,13 @@ def resolve_filters(
         target = target_override
 
     return {
-        "agent_filter":   agent_filter,
-        "skill_filter":   skill_filter,
+        "agent_filter": agent_filter,
+        "skill_filter": skill_filter,
         "command_filter": command_filter,
-        "mcp_filter":     mcp_filter,
-        "tool_filter":    tool_filter,
-        "language":       language,
-        "target":         target,
+        "mcp_filter": mcp_filter,
+        "tool_filter": tool_filter,
+        "language": language,
+        "target": target,
     }
 
 
@@ -199,52 +213,74 @@ def resolve_filters(
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Scope-aware transpilation filter for agent-workspace."
     )
     parser.add_argument(
-        "--scopes", nargs="*", metavar="SCOPE",
+        "--scopes",
+        nargs="*",
+        metavar="SCOPE",
         help="One or more scope names (coding, stats, university, study). "
-             "Can be combined: --scopes stats university"
+        "Can be combined: --scopes stats university",
     )
     parser.add_argument(
-        "--agents", nargs="*", metavar="AGENT",
+        "--agents",
+        nargs="*",
+        metavar="AGENT",
         help="Explicit agent list. Pass with no names (--agents) to install none.",
     )
     parser.add_argument(
-        "--skills", nargs="*", metavar="SKILL",
+        "--skills",
+        nargs="*",
+        metavar="SKILL",
         help="Explicit skill list. Pass with no names to install none.",
     )
     parser.add_argument(
-        "--commands", nargs="*", metavar="COMMAND",
+        "--commands",
+        nargs="*",
+        metavar="COMMAND",
         help="Explicit command list. Pass with no names to install none.",
     )
     parser.add_argument(
-        "--mcp-servers", nargs="*", metavar="SERVER", dest="mcp_servers",
+        "--mcp-servers",
+        nargs="*",
+        metavar="SERVER",
+        dest="mcp_servers",
         help="Explicit MCP-server list. Pass with no names to install none.",
     )
     parser.add_argument(
-        "--tools", nargs="*", metavar="TOOL", dest="tools",
+        "--tools",
+        nargs="*",
+        metavar="TOOL",
+        dest="tools",
         help="Explicit custom-tool list. Pass with no names to install none.",
     )
     parser.add_argument(
-        "--config", metavar="PATH",
-        help="Path to an install config YAML file (install.config.yaml)."
+        "--config",
+        metavar="PATH",
+        help="Path to an install config YAML file (install.config.yaml).",
     )
     parser.add_argument(
-        "--target", choices=["opencode", "continue", "claude", "all"], default=None,
-        help="Platform target (overrides config file target). Default: all"
+        "--target",
+        choices=["opencode", "continue", "claude", "mistral", "all"],
+        default=None,
+        help="Platform target (overrides config file target). Default: all",
     )
     parser.add_argument(
-        "--language", choices=["python", "r", "both"], default=None,
-        help="Language variant for stats/DS agents (overrides config). Default: python"
+        "--language",
+        choices=["python", "r", "both"],
+        default=None,
+        help="Language variant for stats/DS agents (overrides config). Default: python",
     )
     parser.add_argument(
         "--input", default="core/", help="Core input directory. Default: core/"
     )
     parser.add_argument(
-        "--output", default="platforms/", help="Platform output root. Default: platforms/"
+        "--output",
+        default="platforms/",
+        help="Platform output root. Default: platforms/",
     )
 
     args = parser.parse_args()
@@ -289,20 +325,22 @@ def main() -> None:
     # CLI explicit item lists are additive: they union with the scope-derived
     # filter so that extra items supplement (not replace) scope defaults.
     # nargs="*" gives None when the flag is absent, [] when present with no names.
-    def _cli_override(current: Optional[Set[str]], cli_val: Optional[List[str]]) -> Optional[Set[str]]:
+    def _cli_override(
+        current: Optional[Set[str]], cli_val: Optional[List[str]]
+    ) -> Optional[Set[str]]:
         if cli_val is None:
-            return current          # flag not supplied: keep resolved value
+            return current  # flag not supplied: keep resolved value
         if not cli_val:
-            return set()            # flag supplied with no names: install nothing
+            return set()  # flag supplied with no names: install nothing
         if current is None:
-            return set(cli_val)     # no scope filter: use CLI list as the filter
-        return current | set(cli_val)   # union: scope defaults + extra CLI items
+            return set(cli_val)  # no scope filter: use CLI list as the filter
+        return current | set(cli_val)  # union: scope defaults + extra CLI items
 
-    agent_filter   = _cli_override(agent_filter,   args.agents)
-    skill_filter   = _cli_override(skill_filter,   args.skills)
+    agent_filter = _cli_override(agent_filter, args.agents)
+    skill_filter = _cli_override(skill_filter, args.skills)
     command_filter = _cli_override(command_filter, args.commands)
-    mcp_filter     = _cli_override(mcp_filter,     args.mcp_servers)
-    tool_filter    = _cli_override(tool_filter,    args.tools)
+    mcp_filter = _cli_override(mcp_filter, args.mcp_servers)
+    tool_filter = _cli_override(tool_filter, args.tools)
 
     # Report what we're doing
     if args.scopes or (config and config.get("scopes")):
@@ -317,7 +355,9 @@ def main() -> None:
     if skill_filter is not None:
         print(f"   Skills  ({len(skill_filter)}): {', '.join(sorted(skill_filter))}")
     if command_filter is not None:
-        print(f"   Commands({len(command_filter)}): {', '.join(sorted(command_filter))}")
+        print(
+            f"   Commands({len(command_filter)}): {', '.join(sorted(command_filter))}"
+        )
     if tool_filter is not None:
         print(f"   Tools   ({len(tool_filter)}): {', '.join(sorted(tool_filter))}")
     print()
@@ -333,7 +373,9 @@ def main() -> None:
             tgt_output = output_path / tgt
 
         success = transpile(
-            tgt, core_path, tgt_output,
+            tgt,
+            core_path,
+            tgt_output,
             agent_filter=agent_filter,
             command_filter=command_filter,
             skill_filter=skill_filter,
