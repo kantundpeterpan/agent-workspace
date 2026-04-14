@@ -67,7 +67,7 @@ def format_result(
         test_type: Type of test (t_test, f_test, chi_square, correlation, z_test,
                    mann_whitney, wilcoxon, kruskal, regression_coef).
         statistic: Test statistic value.
-        df: Degrees of freedom string (e.g. "48" or "2, 45").
+        df: Degrees of freedom string (e.g. '48' or '2, 45').
         p_value: p-value (formatted as < .001 if needed).
         effect_size: Effect size magnitude.
         effect_size_type: Symbol key for the effect size.
