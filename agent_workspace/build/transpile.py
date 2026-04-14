@@ -656,10 +656,16 @@ def generate_mistral_vibe_config(
                     mcp_config["command"] = parts[0]
                     mcp_config["args"] = parts[1:] if len(parts) > 1 else []
             else:  # remote
-                mcp_config["transport"] = "http"
+                mcp_config["transport"] = server.get("transport", "http")
                 mcp_config["url"] = server.get("url", "http://localhost:8000")
                 if "headers" in server:
                     mcp_config["headers"] = server["headers"]
+                if "api_key_env" in server:
+                    mcp_config["api_key_env"] = server["api_key_env"]
+                if "api_key_header" in server:
+                    mcp_config["api_key_header"] = server["api_key_header"]
+                if "api_key_format" in server:
+                    mcp_config["api_key_format"] = server["api_key_format"]
 
             config["mcp_servers"].append(mcp_config)
 
