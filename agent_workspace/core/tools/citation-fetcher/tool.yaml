@@ -1,0 +1,58 @@
+name: citation-fetcher
+description: Fetches BibTeX citations from DOI, arXiv ID, or PubMed ID using public APIs
+
+exports:
+  - name: fetch
+    type: function
+    object: fetch
+
+schema:
+  input:
+    type: object
+    required: [identifier]
+    properties:
+      identifier:
+        type: string
+        description: DOI (e.g. "10.1038/s41586-021-03819-2"), arXiv ID (e.g. "2103.00020"), or PubMed ID (e.g. "PMID:34385711")
+      format:
+        type: string
+        enum: [bibtex, apa, mla, chicago]
+        default: bibtex
+        description: Output citation format
+      cite_key:
+        type: string
+        description: Optional custom BibTeX cite key (default auto-generated as AuthorYearKeyword)
+
+  output:
+    type: object
+    required: [status]
+    properties:
+      status:
+        type: string
+        enum: [success, not_found, error]
+      cite_key:
+        type: string
+      citation:
+        type: string
+        description: The formatted citation string
+      metadata:
+        type: object
+        properties:
+          title:
+            type: string
+          authors:
+            type: array
+            items:
+              type: string
+          year:
+            type: integer
+          journal:
+            type: string
+          doi:
+            type: string
+      message:
+        type: string
+
+implementation:
+  language: python
+  entry: script.py

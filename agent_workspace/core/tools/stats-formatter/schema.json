@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["test_type"],
+  "properties": {
+    "test_type": {
+      "type": "string",
+      "enum": ["t_test", "f_test", "chi_square", "correlation", "z_test", "mann_whitney", "wilcoxon", "kruskal", "regression_coef"],
+      "description": "Type of statistical test to format"
+    },
+    "statistic": { "type": "number" },
+    "df": { "type": "string" },
+    "p_value": { "type": "number" },
+    "effect_size": { "type": "number" },
+    "effect_size_type": {
+      "type": "string",
+      "enum": ["d", "eta2", "partial_eta2", "omega2", "r", "phi", "V", "f2", "OR"]
+    },
+    "ci_lower": { "type": "number" },
+    "ci_upper": { "type": "number" },
+    "n": { "type": "integer" },
+    "alpha": { "type": "number", "default": 0.05 }
+  }
+}

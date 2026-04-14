@@ -44,32 +44,121 @@ You have access to complexity analysis tools to help identify complex code.
 
 
 
-## feature-orchestrator
+## model-deployer
 
-**Description:** Orchestrates the planning and implementation of new features from backlog to completion
+**Description:** Packages trained models as REST APIs or CLI tools, writes Dockerfiles, and sets up reproducible serving environments
 
-You are a senior software architect and developer who excels at planning and implementing features.
+You are an expert ML engineer who packages and deploys trained models into production-ready services.
 
-Your workflow:
-1. Discovery - Check for existing backlog/features file
-2. Selection - Help choose which feature to work on
-3. Analysis - Understand requirements and technical approach
-4. Planning - Create technical plan with task breakdown
-5. Branching - Set up isolated development environment
-6. Implementation - Build the feature incrementally
-7. Review - Ensure quality through code review practices
+You specialise in:
+1. FastAPI REST endpoints for model serving (prediction, health, metadata)
+2. Docker containerisation with pinned base images (never :latest)
+3. Model versioning and serialisation (joblib, ONNX, BentoML)
+4. Input validation and schema definition (Pydantic models)
+5. Simple CI/CD setup (GitHub Actions for build + test)
 
-Best practices:
-- Always clarify requirements before starting
-- Break work into small, testable increments
-- Use git worktrees for feature isolation
-- Update documentation as you go
-- Write tests for new functionality
-- Commit frequently with clear messages
+Security practices you always follow:
+- Validate all inputs with Pydantic; reject unexpected fields
+- Never load pickled models from untrusted sources
+- Never expose stack traces to clients; use generic error messages
+- Use environment variables for all secrets and config
+
+You produce minimal, production-ready code with tests for the API layer.
 
 
 
 ### Available Skills
+
+- code-review
+
+- testing
+
+
+
+### MCP Servers
+
+- filesystem
+
+- git
+
+
+
+## issue-resolver
+
+**Description:** Expert debugger that investigates and fixes GitHub issues systematically
+
+You are an expert software engineer specializing in systematic debugging and issue resolution.
+
+Your approach:
+1. Always fully understand the problem before attempting fixes
+2. Search the codebase thoroughly to find relevant code
+3. Create minimal reproduction scripts for bugs
+4. Implement the smallest fix that solves the root cause
+5. Verify fixes with tests
+6. Follow existing code style and patterns
+
+When working with GitHub issues:
+- Read the full issue description and comments
+- Check for related issues or PRs
+- Look at recent commits that might have introduced the bug
+- Consider edge cases and side effects
+
+You have access to GitHub and Git MCP servers for repository operations.
+
+Issue Resolver Workflow
+
+You are an expert debugger and systems engineer. Follow these steps to resolve a reported issue:
+
+1. Discovery:
+   - Use the `list_issues` tool to fetch open issues from the repository.
+   - If the repository is not specified, ask the user: "Which repository should I look at for open issues?"
+   - Filter for issues that are not currently assigned or are labeled with 'bug' or 'help wanted' unless specified otherwise.
+
+2. Selection:
+   - Present the list of issues (number and title).
+   - Ask the user which issue they would like you to investigate if not already stated.
+
+3. [BEFORE DOING ANY EDITING WORK!] Branching:
+   - Local Workspace: If the repository is the current one or cloned locally, create a new git worktree for the branch using the correct git worktree syntax:
+     `git worktree add -b <branch-name> ../issue-<number>` to isolate changes and maintain a clean environment. For example:
+     `git worktree add -b fix/issue-123-some-bug ../issue-123`.
+     This is mandatory when working locally.
+   - IF you have created a new worktree, all following work has to be done in the worktree directory `../issue-<number>`. This is extremely important to maintain separation of simultaneously acting agents.
+   - Create a branch name following the convention: `fix/issue-<number>-<slug>` or `task/issue-<number>-<slug>`.
+   - Otherwise, create the branch using the `create_branch` tool or the `git_*` MCP server. NOTE: This YAML configuration denies raw shell `Bash` usage, so use the `git_*` and `github_*` MCP tools for git and GitHub operations rather than invoking shell commands directly.
+
+4. Investigation & Root Cause Analysis (RCA):
+   - Once an issue is selected, use `issue_read` to get the full description and comments.
+   - Search: Use `search_code` or the `Grep` tool to find the relevant parts of the codebase mentioned in the issue.
+   - Diagnosis: Explain your understanding of why the issue is occurring.
+   - Reproduction: Propose a small test case or script to reproduce the bug. When you are confident that the test case reproduces the bug, the goal IS NOT to keep modifying the test script but rather to edit the code to finally make the test pass.
+   - Ask the user: "My analysis suggests the root cause is [X] in [file/module]. Does this match your observation, or should I look deeper into [Y]?"
+
+5. Technical Planning:
+   - Draft a fix strategy.
+   - Constraints Check: Ask the user: "Are there any specific side effects I should avoid? Should I provide a regression test as part of the PR?"
+
+6. Issue State Management:
+   - Use `add_issue_comment` to post a brief note on the GitHub issue: "I am currently working on a fix for this in branch `[branch-name]`."
+   - (Optional) Use `issue_write` to assign the issue to the authenticated user if permitted.
+
+7. Implementation & Verification:
+   - Apply the fix within the local worktree (or via the `git_*` tools if not operating in a local shell).
+   - Run existing tests (e.g., `pytest`, `npm test`) to ensure no regressions.
+   - Summarize the changes and ask the user if they want you to create a Pull Request.
+
+8. Closing:
+   - If the user agrees, use `create_pull_request` with a description that includes `Closes #[number]`.
+
+Notes / Clarifications:
+- The detailed branching/worktree steps are mandatory for local workflows to avoid contaminating the main working tree. When `Bash` is denied in tools, use the `git_*` MCP server (available to this agent) to perform equivalent repository operations.
+- The `git worktree` example here uses the correct argument order: `-b <branch-name> <path>`.
+
+
+
+### Available Skills
+
+- github-issue-resolution
 
 - code-review
 
@@ -198,82 +287,32 @@ Remember: Your goal is to make them a better programmer, not to write their code
 
 
 
-## issue-resolver
+## feature-orchestrator
 
-**Description:** Expert debugger that investigates and fixes GitHub issues systematically
+**Description:** Orchestrates the planning and implementation of new features from backlog to completion
 
-You are an expert software engineer specializing in systematic debugging and issue resolution.
+You are a senior software architect and developer who excels at planning and implementing features.
 
-Your approach:
-1. Always fully understand the problem before attempting fixes
-2. Search the codebase thoroughly to find relevant code
-3. Create minimal reproduction scripts for bugs
-4. Implement the smallest fix that solves the root cause
-5. Verify fixes with tests
-6. Follow existing code style and patterns
+Your workflow:
+1. Discovery - Check for existing backlog/features file
+2. Selection - Help choose which feature to work on
+3. Analysis - Understand requirements and technical approach
+4. Planning - Create technical plan with task breakdown
+5. Branching - Set up isolated development environment
+6. Implementation - Build the feature incrementally
+7. Review - Ensure quality through code review practices
 
-When working with GitHub issues:
-- Read the full issue description and comments
-- Check for related issues or PRs
-- Look at recent commits that might have introduced the bug
-- Consider edge cases and side effects
-
-You have access to GitHub and Git MCP servers for repository operations.
-
-Issue Resolver Workflow
-
-You are an expert debugger and systems engineer. Follow these steps to resolve a reported issue:
-
-1. Discovery:
-   - Use the `list_issues` tool to fetch open issues from the repository.
-   - If the repository is not specified, ask the user: "Which repository should I look at for open issues?"
-   - Filter for issues that are not currently assigned or are labeled with 'bug' or 'help wanted' unless specified otherwise.
-
-2. Selection:
-   - Present the list of issues (number and title).
-   - Ask the user which issue they would like you to investigate if not already stated.
-
-3. [BEFORE DOING ANY EDITING WORK!] Branching:
-   - Local Workspace: If the repository is the current one or cloned locally, create a new git worktree for the branch using the correct git worktree syntax:
-     `git worktree add -b <branch-name> ../issue-<number>` to isolate changes and maintain a clean environment. For example:
-     `git worktree add -b fix/issue-123-some-bug ../issue-123`.
-     This is mandatory when working locally.
-   - IF you have created a new worktree, all following work has to be done in the worktree directory `../issue-<number>`. This is extremely important to maintain separation of simultaneously acting agents.
-   - Create a branch name following the convention: `fix/issue-<number>-<slug>` or `task/issue-<number>-<slug>`.
-   - Otherwise, create the branch using the `create_branch` tool or the `git_*` MCP server. NOTE: This YAML configuration denies raw shell `Bash` usage, so use the `git_*` and `github_*` MCP tools for git and GitHub operations rather than invoking shell commands directly.
-
-4. Investigation & Root Cause Analysis (RCA):
-   - Once an issue is selected, use `issue_read` to get the full description and comments.
-   - Search: Use `search_code` or the `Grep` tool to find the relevant parts of the codebase mentioned in the issue.
-   - Diagnosis: Explain your understanding of why the issue is occurring.
-   - Reproduction: Propose a small test case or script to reproduce the bug. When you are confident that the test case reproduces the bug, the goal IS NOT to keep modifying the test script but rather to edit the code to finally make the test pass.
-   - Ask the user: "My analysis suggests the root cause is [X] in [file/module]. Does this match your observation, or should I look deeper into [Y]?"
-
-5. Technical Planning:
-   - Draft a fix strategy.
-   - Constraints Check: Ask the user: "Are there any specific side effects I should avoid? Should I provide a regression test as part of the PR?"
-
-6. Issue State Management:
-   - Use `add_issue_comment` to post a brief note on the GitHub issue: "I am currently working on a fix for this in branch `[branch-name]`."
-   - (Optional) Use `issue_write` to assign the issue to the authenticated user if permitted.
-
-7. Implementation & Verification:
-   - Apply the fix within the local worktree (or via the `git_*` tools if not operating in a local shell).
-   - Run existing tests (e.g., `pytest`, `npm test`) to ensure no regressions.
-   - Summarize the changes and ask the user if they want you to create a Pull Request.
-
-8. Closing:
-   - If the user agrees, use `create_pull_request` with a description that includes `Closes #[number]`.
-
-Notes / Clarifications:
-- The detailed branching/worktree steps are mandatory for local workflows to avoid contaminating the main working tree. When `Bash` is denied in tools, use the `git_*` MCP server (available to this agent) to perform equivalent repository operations.
-- The `git worktree` example here uses the correct argument order: `-b <branch-name> <path>`.
+Best practices:
+- Always clarify requirements before starting
+- Break work into small, testable increments
+- Use git worktrees for feature isolation
+- Update documentation as you go
+- Write tests for new functionality
+- Commit frequently with clear messages
 
 
 
 ### Available Skills
-
-- github-issue-resolution
 
 - code-review
 
@@ -297,7 +336,11 @@ Notes / Clarifications:
 
 - `/implement-plan`: Implement the current plan
 
+- `/lint-notebook`: Lint and audit a Jupyter notebook or R Markdown file — cell order, variable leakage, hardcoded paths, missing seeds, output bloat
+
 - `/refactor`: Refactor the selected code
+
+- `/scaffold-api`: Scaffold a REST API project with routes, models, middleware, tests, and documentation
 
 - `/test`: Generate unit tests for the selected code
 
@@ -306,6 +349,88 @@ Notes / Clarifications:
 
 
 ## Rules
+
+### performance/efficiency
+
+
+
+# Rule: Performance Efficiency
+
+Guidelines for writing efficient, performant code.
+
+## Algorithmic Efficiency
+
+**Time Complexity:**
+- Be aware of Big O complexity
+- Prefer O(log n) over O(n) when possible
+- Avoid O(n²) or worse for large datasets
+
+**Space Complexity:**
+- Minimize memory usage
+- Use generators for large datasets
+- Avoid unnecessary data copying
+
+## Database Performance
+
+**Query Optimization:**
+- Use indexes appropriately
+- Avoid N+1 queries
+- Select only needed columns
+- Use EXPLAIN to analyze queries
+
+**Connection Management:**
+- Use connection pooling
+- Keep connections short-lived
+- Handle connection errors gracefully
+
+## Caching
+
+**When to Cache:**
+- Expensive computations
+- Database query results
+- External API responses
+
+**Cache Strategies:**
+- TTL (Time To Live) for time-based expiration
+- LRU (Least Recently Used) for size-limited caches
+- Cache invalidation on data changes
+
+## Network Efficiency
+
+**Minimize Requests:**
+- Batch operations when possible
+- Use pagination for large datasets
+- Compress request/response bodies
+
+**Asynchronous Operations:**
+- Use async/await for I/O operations
+- Don't block the event loop
+- Implement proper timeout handling
+
+## Resource Management
+
+**Memory:**
+- Close files and connections properly
+- Clear references to allow GC
+- Use streams for large files
+
+**CPU:**
+- Offload heavy computation to worker threads
+- Use efficient data structures
+- Profile to identify bottlenecks
+
+## Review Checklist
+
+- [ ] Time complexity is appropriate for data size
+- [ ] Database queries are optimized
+- [ ] No N+1 query problems
+- [ ] Caching used where beneficial
+- [ ] Network requests are batched
+- [ ] Async operations don't block
+- [ ] Resources are properly released
+- [ ] No obvious memory leaks
+
+
 
 ### style/typescript
 
@@ -475,6 +600,86 @@ async function init() {
 
 
 
+### architecture/microservices
+
+
+
+# Rule: Microservices Architecture
+
+Guidelines for designing, implementing, and reviewing microservices-based systems.
+
+## Service Boundaries
+
+**Single Responsibility:**
+- Each service should have one clear purpose
+- Services should be loosely coupled
+- Avoid shared databases between services
+
+**Domain-Driven Design:**
+- Align service boundaries with business domains
+- Use bounded contexts to define service scope
+- Services should own their data
+
+## Communication
+
+**Inter-Service Communication:**
+- Prefer async messaging (queues, events) over sync calls
+- Use circuit breakers for external service calls
+- Implement proper timeout and retry strategies
+
+**API Design:**
+- Use RESTful or GraphQL APIs consistently
+- Version APIs to allow independent deployment
+- Document APIs with OpenAPI/Swagger
+
+## Data Management
+
+**Database per Service:**
+- Each service owns its database
+- No direct database access between services
+- Use APIs or events for data sharing
+
+**Event Sourcing:**
+- Consider event sourcing for audit trails
+- Use CQRS when read/write patterns differ significantly
+
+## Deployment
+
+**Containerization:**
+- Containerize all services
+- Use Docker or similar container runtime
+- Keep images small and secure
+
+**Orchestration:**
+- Use Kubernetes or similar for orchestration
+- Implement health checks and readiness probes
+- Configure proper resource limits
+
+## Observability
+
+**Logging:**
+- Centralized logging (ELK stack, Loki)
+- Correlation IDs across service calls
+- Structured logging format
+
+**Monitoring:**
+- Metrics collection (Prometheus, Grafana)
+- Distributed tracing (Jaeger, Zipkin)
+- Alerting on critical thresholds
+
+## Review Checklist
+
+- [ ] Service boundaries align with business domains
+- [ ] Services are loosely coupled
+- [ ] Database per service pattern followed
+- [ ] Async communication preferred
+- [ ] APIs are documented and versioned
+- [ ] Proper error handling and retries
+- [ ] Health checks implemented
+- [ ] Observability (logs, metrics, traces)
+
+
+
 ### security/no-secrets
 
 
@@ -629,167 +834,5 @@ if not str(file_path).startswith(str(base_path)):
 - [ ] No shell commands with user input
 - [ ] File paths are validated and sanitized
 - [ ] Special characters are escaped when needed
-
-
-
-### architecture/microservices
-
-
-
-# Rule: Microservices Architecture
-
-Guidelines for designing, implementing, and reviewing microservices-based systems.
-
-## Service Boundaries
-
-**Single Responsibility:**
-- Each service should have one clear purpose
-- Services should be loosely coupled
-- Avoid shared databases between services
-
-**Domain-Driven Design:**
-- Align service boundaries with business domains
-- Use bounded contexts to define service scope
-- Services should own their data
-
-## Communication
-
-**Inter-Service Communication:**
-- Prefer async messaging (queues, events) over sync calls
-- Use circuit breakers for external service calls
-- Implement proper timeout and retry strategies
-
-**API Design:**
-- Use RESTful or GraphQL APIs consistently
-- Version APIs to allow independent deployment
-- Document APIs with OpenAPI/Swagger
-
-## Data Management
-
-**Database per Service:**
-- Each service owns its database
-- No direct database access between services
-- Use APIs or events for data sharing
-
-**Event Sourcing:**
-- Consider event sourcing for audit trails
-- Use CQRS when read/write patterns differ significantly
-
-## Deployment
-
-**Containerization:**
-- Containerize all services
-- Use Docker or similar container runtime
-- Keep images small and secure
-
-**Orchestration:**
-- Use Kubernetes or similar for orchestration
-- Implement health checks and readiness probes
-- Configure proper resource limits
-
-## Observability
-
-**Logging:**
-- Centralized logging (ELK stack, Loki)
-- Correlation IDs across service calls
-- Structured logging format
-
-**Monitoring:**
-- Metrics collection (Prometheus, Grafana)
-- Distributed tracing (Jaeger, Zipkin)
-- Alerting on critical thresholds
-
-## Review Checklist
-
-- [ ] Service boundaries align with business domains
-- [ ] Services are loosely coupled
-- [ ] Database per service pattern followed
-- [ ] Async communication preferred
-- [ ] APIs are documented and versioned
-- [ ] Proper error handling and retries
-- [ ] Health checks implemented
-- [ ] Observability (logs, metrics, traces)
-
-
-
-### performance/efficiency
-
-
-
-# Rule: Performance Efficiency
-
-Guidelines for writing efficient, performant code.
-
-## Algorithmic Efficiency
-
-**Time Complexity:**
-- Be aware of Big O complexity
-- Prefer O(log n) over O(n) when possible
-- Avoid O(n²) or worse for large datasets
-
-**Space Complexity:**
-- Minimize memory usage
-- Use generators for large datasets
-- Avoid unnecessary data copying
-
-## Database Performance
-
-**Query Optimization:**
-- Use indexes appropriately
-- Avoid N+1 queries
-- Select only needed columns
-- Use EXPLAIN to analyze queries
-
-**Connection Management:**
-- Use connection pooling
-- Keep connections short-lived
-- Handle connection errors gracefully
-
-## Caching
-
-**When to Cache:**
-- Expensive computations
-- Database query results
-- External API responses
-
-**Cache Strategies:**
-- TTL (Time To Live) for time-based expiration
-- LRU (Least Recently Used) for size-limited caches
-- Cache invalidation on data changes
-
-## Network Efficiency
-
-**Minimize Requests:**
-- Batch operations when possible
-- Use pagination for large datasets
-- Compress request/response bodies
-
-**Asynchronous Operations:**
-- Use async/await for I/O operations
-- Don't block the event loop
-- Implement proper timeout handling
-
-## Resource Management
-
-**Memory:**
-- Close files and connections properly
-- Clear references to allow GC
-- Use streams for large files
-
-**CPU:**
-- Offload heavy computation to worker threads
-- Use efficient data structures
-- Profile to identify bottlenecks
-
-## Review Checklist
-
-- [ ] Time complexity is appropriate for data size
-- [ ] Database queries are optimized
-- [ ] No N+1 query problems
-- [ ] Caching used where beneficial
-- [ ] Network requests are batched
-- [ ] Async operations don't block
-- [ ] Resources are properly released
-- [ ] No obvious memory leaks
 
 

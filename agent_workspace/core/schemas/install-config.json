@@ -1,0 +1,188 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Install Config Schema",
+  "description": "Schema for agent-workspace install.config.yaml — controls which agents, skills, commands, and tools are transpiled and installed",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "scopes": {
+      "type": "array",
+      "description": "Pre-defined scope bundles to install. Each scope pulls in a curated set of agents, skills, commands, and MCP servers.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "coding",
+          "stats",
+          "study",
+          "university"
+        ],
+        "description": "Scope name"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "agents": {
+      "type": "array",
+      "description": "Additional agents to include on top of scope defaults. Values are unioned with whatever the selected scopes already include.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "academic-writer",
+          "bayesian-modeler",
+          "causal-analyst",
+          "classical-stats-analyst",
+          "code-reviewer",
+          "concept-explainer",
+          "data-steward",
+          "eda-analyst",
+          "exam-coach",
+          "experiment-tracker",
+          "feature-orchestrator",
+          "flashcard-generator",
+          "issue-resolver",
+          "lecture-notes-generator",
+          "literature-scout",
+          "ml-experimenter",
+          "model-deployer",
+          "obsidian-manager",
+          "pair-programmer",
+          "presentation-builder",
+          "report-writer",
+          "reproducibility-guardian",
+          "revision-planner",
+          "stats-modeler",
+          "ts-forecaster"
+        ],
+        "description": "Agent name"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "skills": {
+      "type": "array",
+      "description": "Additional skills to include on top of scope defaults. Values are unioned with whatever the selected scopes already include.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "academic-writing",
+          "bayesian-inference",
+          "causal-inference",
+          "classical-statistics",
+          "code-review",
+          "concept-explanation",
+          "dataset-documentation",
+          "eda-visualization",
+          "experiment-reporting",
+          "flashcard-generation",
+          "github-issue-resolution",
+          "lecture-note-generation",
+          "literature-search",
+          "ml-experimentation",
+          "obsidian-vault-management",
+          "pair-programming",
+          "presentation-generation",
+          "report-writing",
+          "reproducibility-audit",
+          "revision-planning",
+          "statistical-inference",
+          "testing",
+          "time-series-analysis"
+        ],
+        "description": "Skill name"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "commands": {
+      "type": "array",
+      "description": "Additional slash commands to include on top of scope defaults. Values are unioned with whatever the selected scopes already include.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "audit-reproducibility",
+          "check-assumptions",
+          "check-convergence",
+          "check-stationarity",
+          "commit-wo-untracked",
+          "compare-models",
+          "document-dataset",
+          "doi-to-bibtex",
+          "draft-methods",
+          "draft-report-section",
+          "explain",
+          "explain-concept",
+          "generate-lecture-notes",
+          "generate-slides",
+          "generate-study-summary",
+          "ideate-research-question",
+          "implement-plan",
+          "lint-notebook",
+          "make-flashcards",
+          "obsidian-capture",
+          "plan-revision",
+          "power-calculation",
+          "practice-exam",
+          "refactor",
+          "run-classical-test",
+          "run-eda",
+          "scaffold-api",
+          "summarize-experiment",
+          "test",
+          "write-plan-to-md"
+        ],
+        "description": "Command name"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "mcp_servers": {
+      "type": "array",
+      "description": "MCP servers to include. Values are unioned with whatever the selected scopes already include.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "anthropic-memory",
+          "context7",
+          "filesystem",
+          "git",
+          "github",
+          "obsidian"
+        ],
+        "description": "MCP server name"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "language": {
+      "type": "string",
+      "description": "Language variant for statistics and data-science agent system prompts.\n- python: Python-only (pandas, statsmodels, PyMC, scikit-learn…)\n- r: R-only (tidyverse, lme4, brms, forecast…)\n- both: Bilingual Python + R in every agent",
+      "enum": [
+        "python",
+        "r",
+        "both"
+      ],
+      "default": "python"
+    },
+    "target": {
+      "type": "string",
+      "description": "Platform(s) to generate output for.\n- all: OpenCode + Continue.dev + Claude Code\n- opencode: OpenCode only\n- continue: Continue.dev only\n- claude: Claude Code only",
+      "enum": [
+        "all",
+        "opencode",
+        "continue",
+        "claude"
+      ],
+      "default": "all"
+    },
+    "input": {
+      "type": "string",
+      "description": "Path to the core input directory. Defaults to 'core/'.",
+      "default": "core/"
+    },
+    "output": {
+      "type": "string",
+      "description": "Path to the platform output root directory. Defaults to 'platforms/'.",
+      "default": "platforms/"
+    }
+  }
+}

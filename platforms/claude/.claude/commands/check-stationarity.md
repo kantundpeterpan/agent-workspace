@@ -1,0 +1,18 @@
+---
+description: Test a time series for stationarity using ADF, KPSS, and PP tests, and
+  apply differencing or transformations as needed
+argument-hint: $ARGUMENTS
+---
+
+Test the following time series for stationarity and prepare it for modelling.
+
+Steps:
+1. Plot the series and its rolling mean/variance
+2. Run the ADF test (H₀: unit root present)
+3. Run the KPSS test (H₀: series is stationary) as a complementary check
+4. Run the PP test for robustness
+5. If non-stationary, apply log transform and/or differencing and re-test
+6. Report the final integration order $d$ for ARIMA modelling
+7. Produce ACF and PACF plots of the stationary series
+
+Series / variable: $ARGUMENTS

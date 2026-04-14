@@ -1,0 +1,70 @@
+name: data-profiler
+description: Generates a quick structural summary of a dataset  -  shape, dtypes, missing values, cardinality, and basic distribution statistics
+
+exports:
+  - name: profile
+    type: function
+    object: profile
+
+schema:
+  input:
+    type: object
+    required: [file_path]
+    properties:
+      file_path:
+        type: string
+        description: Path to the CSV, TSV, Parquet, or Excel file to profile
+      sample_rows:
+        type: integer
+        default: 5
+        description: Number of example rows to include in the report
+      max_categories:
+        type: integer
+        default: 20
+        description: Maximum number of unique values to list for categorical columns
+
+  output:
+    type: object
+    required: [status, shape]
+    properties:
+      status:
+        type: string
+        enum: [success, error]
+      shape:
+        type: object
+        properties:
+          rows:
+            type: integer
+          columns:
+            type: integer
+      columns:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            dtype:
+              type: string
+            missing_count:
+              type: integer
+            missing_pct:
+              type: number
+            unique_count:
+              type: integer
+            sample_values:
+              type: array
+            stats:
+              type: object
+              description: min/max/mean/std for numeric; top categories for categorical
+      warnings:
+        type: array
+        items:
+          type: string
+        description: Detected data quality issues (high missingness, constant columns, etc.)
+      message:
+        type: string
+
+implementation:
+  language: python
+  entry: script.py

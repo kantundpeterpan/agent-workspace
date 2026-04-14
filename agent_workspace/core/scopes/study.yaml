@@ -1,0 +1,35 @@
+name: study
+description: Student-focused revision, exam coaching, and concept explanation  -  flashcard generation, spaced-repetition planning, and interactive practice for university-level science and statistics
+requires_language: true
+
+agents:
+  - flashcard-generator
+  - revision-planner
+  - exam-coach
+  - concept-explainer
+  - lecture-notes-generator
+  - obsidian-manager
+
+skills:
+  - flashcard-generation
+  - revision-planning
+  - concept-explanation
+  - lecture-note-generation
+  - obsidian-vault-management
+
+commands:
+  - make-flashcards
+  - plan-revision
+  - explain-concept
+  - practice-exam
+  - generate-study-summary
+  - generate-lecture-notes
+  - obsidian-capture
+
+mcp_servers:
+  - filesystem
+  - anthropic-memory
+  - obsidian
+
+custom_tools:
+  - anki-exporter

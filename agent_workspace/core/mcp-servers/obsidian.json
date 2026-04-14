@@ -1,0 +1,6 @@
+{
+  "name": "obsidian",
+  "type": "local",
+  "command": ["npx", "-y", "mcp-obsidian"],
+  "enabled": true
+}

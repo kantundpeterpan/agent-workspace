@@ -1,0 +1,45 @@
+name: data-science-project
+description: Full data science and ML project lifecycle  -  problem framing, EDA, modelling, evaluation, deployment, and
+  monitoring. Includes all specialist sub-agents coordinated by data-science-project-supervisor.
+requires_language: true
+
+agents:
+  - data-science-project-supervisor
+  - eda-analyst
+  - data-steward
+  - ml-experimenter
+  - experiment-tracker
+  - stats-modeler
+  - reproducibility-guardian
+  - model-deployer
+
+skills:
+  - ml-experimentation
+  - experiment-reporting
+  - eda-visualization
+  - dataset-documentation
+  - reproducibility-audit
+  - statistical-inference
+  - classical-statistics
+  - code-review
+  - testing
+
+commands:
+  - write-plan-to-md
+  - run-eda
+  - document-dataset
+  - check-assumptions
+  - compare-models
+  - summarize-experiment
+  - audit-reproducibility
+  - lint-notebook
+
+mcp_servers:
+  - filesystem
+  - context7
+  - anthropic-memory
+  - git
+
+custom_tools:
+  - data-profiler
+  - stats-formatter

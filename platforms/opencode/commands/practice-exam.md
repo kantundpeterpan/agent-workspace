@@ -1,0 +1,18 @@
+---
+description: Generate a timed practice exam with graded questions for a given topic
+  area and difficulty level
+---
+
+Generate a practice exam for the following topic and level.
+
+Format:
+1. 5–10 questions mixing: multiple choice, short answer, calculation, and interpretation
+2. Difficulty levels: easy (knowledge/comprehension), medium (application), hard (analysis/synthesis)
+3. Mark scheme with full worked solutions and common errors noted
+4. LaTeX dollar notation for all mathematical expressions
+
+After the student answers, provide:
+- Score and percentage
+- Per-question feedback: correct reasoning, what went wrong, what to revise
+
+Topic and level: $ARGUMENTS

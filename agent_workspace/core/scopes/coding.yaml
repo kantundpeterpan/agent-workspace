@@ -1,0 +1,32 @@
+name: coding
+description: Code review, refactoring, feature development, testing, and deployment for software engineering projects
+
+agents:
+  - code-reviewer
+  - feature-orchestrator
+  - issue-resolver
+  - pair-programmer
+  - model-deployer
+
+skills:
+  - code-review
+  - testing
+  - github-issue-resolution
+  - pair-programming
+
+commands:
+  - commit-wo-untracked
+  - explain
+  - implement-plan
+  - refactor
+  - test
+  - write-plan-to-md
+  - scaffold-api
+  - lint-notebook
+
+mcp_servers:
+  - git
+  - github
+  - filesystem
+  - context7
+  - anthropic-memory

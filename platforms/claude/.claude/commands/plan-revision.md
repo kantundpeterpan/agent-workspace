@@ -1,0 +1,23 @@
+---
+description: Build a personalised spaced-repetition revision schedule from a topic
+  list and exam date
+argument-hint: $ARGUMENTS
+---
+
+Create a personalised revision plan for the following exam or assessment.
+
+Gather or infer:
+- Topic list with self-assessed confidence (1–4) for each topic
+- Exam date
+- Available study hours per day
+
+Then produce:
+1. Topic priority ranking using: Priority = (weight × (4 − confidence)) / (1 + days_until_exam)
+2. A day-by-day revision schedule with spaced repetition intervals
+3. Active retrieval activities (flashcards, practice problems) for ≥ 40% of each session
+4. Weekly checkpoints (brain-dump + past paper)
+5. A final exam-week sprint plan
+
+Format as Markdown for Obsidian or a calendar app.
+
+Exam / topic details: $ARGUMENTS

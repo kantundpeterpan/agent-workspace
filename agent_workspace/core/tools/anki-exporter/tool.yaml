@@ -1,0 +1,67 @@
+name: anki-exporter
+description: Converts structured flashcard data (question/answer pairs) into an Anki-compatible .apkg file or plain-text import format
+
+exports:
+  - name: export_deck
+    type: function
+    object: export_deck
+
+schema:
+  input:
+    type: object
+    required: [deck_name, cards]
+    properties:
+      deck_name:
+        type: string
+        description: Name for the Anki deck
+      cards:
+        type: array
+        description: List of flashcard objects
+        items:
+          type: object
+          required: [front, back]
+          properties:
+            front:
+              type: string
+              description: Question or prompt (supports LaTeX via $...$ and $$...$$)
+            back:
+              type: string
+              description: Answer or explanation (supports LaTeX via $...$ and $$...$$)
+            tags:
+              type: array
+              items:
+                type: string
+              description: Optional Anki tags for this card
+      output_format:
+        type: string
+        enum: [txt, csv]
+        default: txt
+        description: Export format  -  txt for Anki plain-text import, csv for spreadsheet review
+      output_path:
+        type: string
+        description: File path to write the export (default auto-named in current directory)
+      tag_all:
+        type: array
+        items:
+          type: string
+        description: Tags to apply to every card in the deck
+
+  output:
+    type: object
+    required: [status]
+    properties:
+      status:
+        type: string
+        enum: [success, error]
+      output_path:
+        type: string
+        description: Path to the generated file
+      card_count:
+        type: integer
+        description: Number of cards written
+      message:
+        type: string
+
+implementation:
+  language: python
+  entry: script.py

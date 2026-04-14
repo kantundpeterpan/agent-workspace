@@ -1,0 +1,20 @@
+---
+description: "Lint and audit a Jupyter notebook or R Markdown file \u2014 cell order,\
+  \ variable leakage, hardcoded paths, missing seeds, output bloat"
+argument-hint: $ARGUMENTS
+---
+
+Lint and audit the following notebook or R Markdown file for common quality issues.
+
+Check:
+1. Cells run in order from top to bottom (no out-of-order execution)
+2. No hardcoded absolute file paths
+3. Random seeds set before stochastic operations
+4. No credentials or sensitive data in outputs
+5. All imports at the top
+6. No excessive cell outputs (large dataframes, full model prints) — suggest trimming
+7. Clear section headers with Markdown cells
+
+Produce a prioritised list of issues with suggested fixes.
+
+Notebook path: $ARGUMENTS

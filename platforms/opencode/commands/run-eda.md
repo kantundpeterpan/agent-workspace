@@ -1,0 +1,17 @@
+---
+description: "Run a full exploratory data analysis on a dataset \u2014 shape, missing\
+  \ values, distributions, correlations, and visualisations"
+---
+
+Run a comprehensive exploratory data analysis on the following dataset or file path.
+
+Steps to cover:
+1. Load and inspect the data (shape, dtypes, head)
+2. Summarise missing values and data quality issues
+3. Describe distributions of numeric columns (histogram, boxplot, descriptive stats)
+4. Analyse categorical columns (value counts, bar charts)
+5. Explore pairwise relationships (correlation matrix, scatter matrix)
+6. Identify outliers and anomalies
+7. Summarise key findings and suggest next analysis steps
+
+Dataset / path: $ARGUMENTS

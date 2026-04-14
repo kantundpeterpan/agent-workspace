@@ -1,0 +1,12 @@
+name: doi-to-bibtex
+description: Fetch a BibTeX citation entry from a DOI, arXiv ID, or PubMed ID using the citation-fetcher tool
+prompt: |
+  Fetch the BibTeX citation for the following identifier(s) and add them to the references file.
+
+  For each identifier:
+  1. Use the citation-fetcher tool to retrieve the BibTeX entry
+  2. Verify the entry looks correct (title, authors, year)
+  3. Suggest a short, memorable cite key (AuthorYearKeyword format)
+  4. Append the entry to references.bib (or create it if absent)
+
+  Identifiers (DOI / arXiv ID / PubMed ID): $ARGUMENTS

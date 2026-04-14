@@ -1,0 +1,56 @@
+name: research-project
+description: End-to-end quantitative research project management  -  from question formulation and study design through statistical
+  analysis, writing, and journal submission. Includes all specialist sub-agents coordinated by research-project-supervisor.
+requires_language: true
+
+agents:
+  - research-project-supervisor
+  - literature-scout
+  - academic-writer
+  - eda-analyst
+  - data-steward
+  - stats-modeler
+  - bayesian-modeler
+  - ml-experimenter
+  - causal-analyst
+  - ts-forecaster
+  - report-writer
+  - reproducibility-guardian
+
+skills:
+  - academic-writing
+  - report-writing
+  - literature-search
+  - statistical-inference
+  - classical-statistics
+  - bayesian-inference
+  - ml-experimentation
+  - causal-inference
+  - time-series-analysis
+  - eda-visualization
+  - dataset-documentation
+  - experiment-reporting
+  - reproducibility-audit
+
+commands:
+  - write-plan-to-md
+  - ideate-research-question
+  - run-eda
+  - document-dataset
+  - check-assumptions
+  - run-classical-test
+  - compare-models
+  - power-calculation
+  - check-stationarity
+  - check-convergence
+  - summarize-experiment
+  - audit-reproducibility
+  - draft-methods
+  - draft-report-section
+  - doi-to-bibtex
+
+mcp_servers:
+  - filesystem
+  - context7
+  - anthropic-memory
+  - git

@@ -1,0 +1,27 @@
+name: academic-writing-project
+description: Full academic paper or thesis writing workflow from outline to submission-ready draft. Includes all specialist
+  sub-agents coordinated by academic-writing-supervisor.
+
+agents:
+  - academic-writing-supervisor
+  - academic-writer
+  - report-writer
+  - literature-scout
+
+skills:
+  - academic-writing
+  - report-writing
+  - literature-search
+
+commands:
+  - write-plan-to-md
+  - draft-report-section
+  - draft-methods
+  - doi-to-bibtex
+  - ideate-research-question
+  - generate-slides
+
+mcp_servers:
+  - filesystem
+  - context7
+  - anthropic-memory
