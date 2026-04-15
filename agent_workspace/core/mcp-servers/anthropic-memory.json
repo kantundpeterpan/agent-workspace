@@ -1,5 +1,5 @@
 {
-  "name":"memory",
+  "name":"anthropic-memory",
   "type":"local",
   "command": [
 		"npx",
