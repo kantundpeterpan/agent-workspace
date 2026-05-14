@@ -1,0 +1,15 @@
+{
+  "name": "chrome-dev-tools",
+  "type": "local",
+  "command": ["npx",
+    "-y",
+    "chrome-devtools-mcp@latest",
+    "--headless", 
+    "--no-sandbox",
+    "--disable-setuid-sandbox"
+  ],
+  "environment": {
+    "CHROME_PATH": "/usr/bin/google-chrome"
+  },
+  "enabled": true
+}
