@@ -8,6 +8,7 @@ import yaml
 import json
 import sys
 import argparse
+import toml
 from pathlib import Path
 from typing import Dict, List, Any, Tuple, Optional, Set
 
@@ -30,6 +31,15 @@ OPENCODE_TOOL_NAME_MAP = {
     "List": "list",
 }
 
+# Mistral Vibe built-in tool name mapping
+MISTRAL_VIBE_TOOL_NAME_MAP = {
+    "Read": "read_file",
+    "Write": "write_file",
+    "Edit": "search_replace",
+    "Grep": "grep",
+    "Bash": "bash",
+}
+
 
 def load_agent(agent_path: Path) -> Dict:
     """Load an agent definition."""
@@ -37,7 +47,9 @@ def load_agent(agent_path: Path) -> Dict:
         return yaml.safe_load(f)
 
 
-def load_language_overlay(languages_dir: Path, language: str, agent_name: str) -> Optional[Dict]:
+def load_language_overlay(
+    languages_dir: Path, language: str, agent_name: str
+) -> Optional[Dict]:
     """Load a language-specific overlay for an agent (returns None if not found)."""
     if not language or language == "python":
         return None
@@ -153,7 +165,9 @@ def generate_opencode_config(
     # Load commands
     commands_path = core_path / "commands"
     if commands_path.exists():
-        generate_opencode_commands(core_path, output_path, command_filter=command_filter)
+        generate_opencode_commands(
+            core_path, output_path, command_filter=command_filter
+        )
 
     return config
 
@@ -523,6 +537,275 @@ def generate_claude_commands(
         print(f"    ✅ Generated Claude command: {name}")
 
 
+# ---------------------------------------------------------------------------
+# Mistral Vibe
+# ---------------------------------------------------------------------------
+
+
+def generate_mistral_vibe_config(
+    core_path: Path,
+    output_path: Path,
+    agent_filter: Optional[Set[str]] = None,
+    mcp_filter: Optional[Set[str]] = None,
+) -> Dict:
+    """Generate Mistral Vibe configuration (config.toml).
+
+    Creates the main configuration with providers, models, and MCP servers.
+    """
+    config: Dict[str, Any] = {
+        "providers": [],
+        "models": [],
+        "mcp_servers": [],
+    }
+
+    # Track unique providers to avoid duplicates
+    providers_added: Set[str] = set()
+
+    # Load agents to extract providers and models
+    agents_path = core_path / "agents"
+    if agents_path.exists():
+        for agent_file in agents_path.glob("*.yaml"):
+            agent_data = load_agent(agent_file)
+            name = agent_data.get("name", agent_file.stem)
+
+            if agent_filter is not None and name not in agent_filter:
+                continue
+
+            model = agent_data.get("model", {})
+            provider = model.get("provider", "")
+            model_name = model.get("model", "")
+
+            if provider and model_name and provider not in providers_added:
+                # Add provider
+                provider_config: Dict[str, Any] = {
+                    "name": provider,
+                }
+                # Set api_base based on provider
+                if provider == "mistral":
+                    provider_config["api_base"] = "https://api.mistral.ai/v1"
+                    provider_config["api_key_env_var"] = "MISTRAL_API_KEY"
+                    provider_config["api_style"] = "mistral"
+                    provider_config["backend"] = "mistral"
+                elif provider == "openai":
+                    provider_config["api_base"] = "https://api.openai.com/v1"
+                    provider_config["api_key_env_var"] = "OPENAI_API_KEY"
+                    provider_config["api_style"] = "openai"
+                    provider_config["backend"] = "generic"
+                elif provider == "anthropic":
+                    provider_config["api_base"] = "https://api.anthropic.com"
+                    provider_config["api_key_env_var"] = "ANTHROPIC_API_KEY"
+                    provider_config["api_style"] = "openai"
+                    provider_config["backend"] = "generic"
+                elif provider == "google":
+                    provider_config["api_base"] = (
+                        "https://generativelanguage.googleapis.com/v1beta"
+                    )
+                    provider_config["api_key_env_var"] = "GOOGLE_API_KEY"
+                    provider_config["api_style"] = "openai"
+                    provider_config["backend"] = "generic"
+                elif provider == "github-copilot":
+                    provider_config["api_base"] = "https://api.githubcopilot.com"
+                    provider_config["api_key_env_var"] = "GITHUB_COPILOT_TOKEN"
+                    provider_config["api_style"] = "openai"
+                    provider_config["backend"] = "generic"
+                else:
+                    # Generic provider setup
+                    provider_config["api_base"] = f"https://api.{provider}.com/v1"
+                    provider_config["api_key_env_var"] = f"{provider.upper()}_API_KEY"
+                    provider_config["api_style"] = "openai"
+                    provider_config["backend"] = "generic"
+
+                config["providers"].append(provider_config)
+                providers_added.add(provider)
+
+                # Add model
+                temperature = model.get("temperature", 0.7)
+                model_config = {
+                    "name": model_name,
+                    "provider": provider,
+                    "alias": f"{name}-model",
+                    "temperature": temperature,
+                    "input_price": 0.0,
+                    "output_price": 0.0,
+                }
+                config["models"].append(model_config)
+
+    # Load MCP servers
+    mcp_path = core_path / "mcp-servers"
+    if mcp_path.exists():
+        for server_file in mcp_path.glob("*.json"):
+            server = load_mcp_server(server_file)
+            mcp_name = server.pop("name", server_file.stem)
+            if mcp_filter is not None and mcp_name not in mcp_filter:
+                continue
+
+            server_type = server.get("type", "local")
+
+            mcp_config: Dict[str, Any] = {
+                "name": mcp_name,
+            }
+
+            if server_type == "local":
+                mcp_config["transport"] = "stdio"
+                command = server.get("command", [])
+                if isinstance(command, list) and command:
+                    mcp_config["command"] = command[0]
+                    mcp_config["args"] = command[1:] if len(command) > 1 else []
+                elif isinstance(command, str):
+                    parts = command.split()
+                    mcp_config["command"] = parts[0]
+                    mcp_config["args"] = parts[1:] if len(parts) > 1 else []
+            else:  # remote
+                mcp_config["transport"] = server.get("transport", "http")
+                mcp_config["url"] = server.get("url", "http://localhost:8000")
+                if "headers" in server:
+                    mcp_config["headers"] = server["headers"]
+                if "api_key_env" in server:
+                    mcp_config["api_key_env"] = server["api_key_env"]
+                if "api_key_header" in server:
+                    mcp_config["api_key_header"] = server["api_key_header"]
+                if "api_key_format" in server:
+                    mcp_config["api_key_format"] = server["api_key_format"]
+
+            config["mcp_servers"].append(mcp_config)
+
+    return config
+
+
+def generate_mistral_vibe_agents(
+    core_path: Path,
+    output_path: Path,
+    agent_filter: Optional[Set[str]] = None,
+    language: str = "python",
+) -> None:
+    """Generate Mistral Vibe agent TOML files.
+
+    Creates agent-specific TOML configurations that reference prompt files.
+    """
+    agents_dir = output_path / "agents"
+    agents_dir.mkdir(parents=True, exist_ok=True)
+
+    agents_path = core_path / "agents"
+    languages_dir = core_path / "languages"
+
+    if not agents_path.exists():
+        return
+
+    for agent_file in agents_path.glob("*.yaml"):
+        agent_data = load_agent(agent_file)
+        name = agent_data.get("name", agent_file.stem)
+
+        if agent_filter is not None and name not in agent_filter:
+            continue
+
+        # Apply language overlay
+        overlay = load_language_overlay(languages_dir, language, name)
+        agent_data = apply_language_overlay(agent_data, overlay)
+
+        model = agent_data.get("model", {})
+        provider = model.get("provider", "")
+        model_name = model.get("model", "")
+
+        # Build agent TOML
+        agent_config: Dict[str, Any] = {
+            "active_model": f"{name}-model",
+        }
+
+        # System prompt references the prompt file
+        agent_config["system_prompt_id"] = name
+
+        # Handle tool permissions
+        tools = agent_data.get("tools", {})
+        if tools:
+            disabled_tools: List[str] = []
+            tool_perms: Dict[str, Any] = {}
+
+            for tool_name, perm in (tools or {}).items():
+                # Map to Mistral Vibe tool name if available
+                mapped_name = MISTRAL_VIBE_TOOL_NAME_MAP.get(tool_name, tool_name)
+
+                # perm can be a string ("allow", "deny", "ask") or a dict with patterns
+                if isinstance(perm, dict):
+                    if perm.get("*") == "deny" or perm.get("*") == False:
+                        disabled_tools.append(mapped_name.lower())
+                        continue
+                    # For dict perms, just use "ask" as default (conservative)
+                    perm_value = "ask"
+                elif perm == "deny" or perm == False:
+                    disabled_tools.append(mapped_name.lower())
+                    continue
+                else:
+                    perm_value = "always" if perm == "allow" else "ask"
+
+                tool_perms[f"tools.{mapped_name.lower()}"] = {"permission": perm_value}
+
+            if disabled_tools:
+                agent_config["disabled_tools"] = disabled_tools
+
+            for tool_name, perm_info in tool_perms.items():
+                if tool_name not in agent_config:
+                    agent_config[tool_name] = perm_info
+
+        # Handle skills (as enabled_tools or mentioned in prompt)
+        skills = agent_data.get("skills", [])
+        if skills:
+            skill_list = skills if isinstance(skills, list) else list(skills.keys())
+            enabled = [s.replace("_", "-") for s in skill_list]
+            if "enabled_tools" not in agent_config:
+                agent_config["enabled_tools"] = enabled
+            else:
+                agent_config["enabled_tools"].extend(enabled)
+
+        # Write TOML file
+        output_file = agents_dir / f"{name}.toml"
+        with open(output_file, "w") as f:
+            toml.dump(agent_config, f)
+        print(f"    ✅ Generated Mistral Vibe agent: {name}")
+
+
+def generate_mistral_vibe_prompts(
+    core_path: Path,
+    output_path: Path,
+    agent_filter: Optional[Set[str]] = None,
+    language: str = "python",
+) -> None:
+    """Generate Mistral Vibe system prompt files.
+
+    Creates markdown files with agent system prompts.
+    """
+    prompts_dir = output_path / "prompts"
+    prompts_dir.mkdir(parents=True, exist_ok=True)
+
+    agents_path = core_path / "agents"
+    languages_dir = core_path / "languages"
+
+    if not agents_path.exists():
+        return
+
+    for agent_file in agents_path.glob("*.yaml"):
+        agent_data = load_agent(agent_file)
+        name = agent_data.get("name", agent_file.stem)
+
+        if agent_filter is not None and name not in agent_filter:
+            continue
+
+        # Apply language overlay
+        overlay = load_language_overlay(languages_dir, language, name)
+        agent_data = apply_language_overlay(agent_data, overlay)
+
+        # Get system prompt
+        system_prompt = agent_data.get("system_prompt", "")
+
+        # Prepend description as header
+        description = agent_data.get("description", "")
+        content = f"# {name}\n\n{description}\n\n{system_prompt}"
+
+        output_file = prompts_dir / f"{name}.md"
+        with open(output_file, "w") as f:
+            f.write(content)
+        print(f"    ✅ Generated Mistral Vibe prompt: {name}")
+
+
 def copy_skills(
     core_path: Path,
     output_path: Path,
@@ -603,7 +886,8 @@ def transpile(
     try:
         if target == "opencode":
             config = generate_opencode_config(
-                core_path, output_path,
+                core_path,
+                output_path,
                 agent_filter=agent_filter,
                 command_filter=command_filter,
                 skill_filter=skill_filter,
@@ -682,7 +966,9 @@ def transpile(
 
             # Generate custom tools
             print(f"  🔧 Generating custom tools...")
-            if not generate_opencode_tools(core_path, output_path, tool_filter=tool_filter):
+            if not generate_opencode_tools(
+                core_path, output_path, tool_filter=tool_filter
+            ):
                 print(f"  ⚠️  Some tools failed to transpile")
 
             # Copy skills
@@ -705,7 +991,8 @@ def transpile(
 
         elif target == "claude":
             config = generate_claude_config(
-                core_path, output_path,
+                core_path,
+                output_path,
                 agent_filter=agent_filter,
                 command_filter=command_filter,
                 language=language,
@@ -715,6 +1002,39 @@ def transpile(
             print(f"  ✅ Generated CLAUDE.md")
 
             # Copy skills
+            copy_skills(core_path, output_path, skill_filter=skill_filter)
+
+        elif target == "mistral":
+            # Generate Mistral Vibe config.toml
+            config = generate_mistral_vibe_config(
+                core_path,
+                output_path,
+                agent_filter=agent_filter,
+                mcp_filter=mcp_filter,
+            )
+            with open(output_path / "config.toml", "w") as f:
+                toml.dump(config, f)
+            print(f"  ✅ Generated config.toml")
+
+            # Generate agent TOML files
+            print(f"  👤 Generating agent configurations...")
+            generate_mistral_vibe_agents(
+                core_path,
+                output_path,
+                agent_filter=agent_filter,
+                language=language,
+            )
+
+            # Generate system prompt files
+            print(f"  📝 Generating system prompts...")
+            generate_mistral_vibe_prompts(
+                core_path,
+                output_path,
+                agent_filter=agent_filter,
+                language=language,
+            )
+
+            # Copy skills (Mistral Vibe uses them from ~/.vibe/skills/)
             copy_skills(core_path, output_path, skill_filter=skill_filter)
 
         else:
@@ -737,29 +1057,41 @@ def main():
         description="Transpile agent workspace definitions"
     )
     parser.add_argument(
-        "--target", required=True, choices=["opencode", "continue", "claude", "all"]
+        "--target",
+        required=True,
+        choices=["opencode", "continue", "claude", "mistral", "all"],
     )
     parser.add_argument("--input", default="core/", help="Input directory")
     parser.add_argument("--output", required=True, help="Output directory")
     parser.add_argument(
-        "--language", default="python", choices=["python", "r", "both"],
-        help="Language variant for stats/DS agent system prompts (default: python)"
+        "--language",
+        default="python",
+        choices=["python", "r", "both"],
+        help="Language variant for stats/DS agent system prompts (default: python)",
     )
     parser.add_argument(
-        "--agents", nargs="*", metavar="AGENT",
-        help="Restrict to specific agent names (default: all)"
+        "--agents",
+        nargs="*",
+        metavar="AGENT",
+        help="Restrict to specific agent names (default: all)",
     )
     parser.add_argument(
-        "--commands", nargs="*", metavar="COMMAND",
-        help="Restrict to specific command names (default: all)"
+        "--commands",
+        nargs="*",
+        metavar="COMMAND",
+        help="Restrict to specific command names (default: all)",
     )
     parser.add_argument(
-        "--skills", nargs="*", metavar="SKILL",
-        help="Restrict to specific skill names (default: all)"
+        "--skills",
+        nargs="*",
+        metavar="SKILL",
+        help="Restrict to specific skill names (default: all)",
     )
     parser.add_argument(
-        "--mcp-servers", nargs="*", metavar="MCP",
-        help="Restrict to specific MCP server names (default: all)"
+        "--mcp-servers",
+        nargs="*",
+        metavar="MCP",
+        help="Restrict to specific MCP server names (default: all)",
     )
 
     args = parser.parse_args()
@@ -773,7 +1105,7 @@ def main():
     mcp_filter = set(args.mcp_servers) if args.mcp_servers else None
 
     if args.target == "all":
-        targets = ["opencode", "continue", "claude"]
+        targets = ["opencode", "continue", "claude", "mistral"]
     else:
         targets = [args.target]
 
@@ -787,7 +1119,9 @@ def main():
             target_output = output_path / target
 
         if not transpile(
-            target, core_path, target_output,
+            target,
+            core_path,
+            target_output,
             agent_filter=agent_filter,
             command_filter=command_filter,
             skill_filter=skill_filter,

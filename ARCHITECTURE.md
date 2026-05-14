@@ -18,12 +18,12 @@ The Agent Workspace uses a transpilation architecture where tool-agnostic defini
               │    Engine (Python)   │
               └──────────┬──────────┘
                          │
-         ┌───────────────┼───────────────┐
-         ▼               ▼               ▼
-┌────────────────┐ ┌──────────┐ ┌──────────────┐
-│   OpenCode     │ │ Continue │ │    Claude    │
-│  opencode.json │ │config.yaml│ │  CLAUDE.md   │
-└────────────────┘ └──────────┘ └──────────────┘
+          ┌───────────────┼───────────────┼───────────────┐
+          ▼               ▼               ▼               ▼
+┌────────────────┐ ┌──────────┐ ┌──────────────┐ ┌──────────────┐
+│   OpenCode     │ │ Continue │ │    Claude    │ │    Mistral   │
+│  opencode.json │ │config.yaml│ │  CLAUDE.md   │ │  config.toml │
+└────────────────┘ └──────────┘ └──────────────┘ └──────────────┘
 ```
 
 ## Core Concepts
@@ -157,16 +157,45 @@ model:
 - `core/rules/` → Inline in system prompt
 - `core/commands/{name}.yaml` → `.claude/commands/{name}.md`
 
+### Mistral Vibe
+
+**Input** → **Output**
+- `core/agents/{name}.yaml` → `agents/{name}.toml` + `prompts/{name}.md`
+- `core/skills/{name}/` → Copied to `mistral/skills/`
+- `core/mcp-servers/{name}.json` → `mcp_servers[]` in `config.toml`
+- `core/rules/{name}.md` → Inlined in system prompt
+
+**Key Mappings**:
+```yaml
+# Agent YAML
+model:
+  provider: google
+  model: gemini-3-flash-preview
+```
+↓
+```toml
+[[providers]]
+name = "google"
+api_base = "https://generativelanguage.googleapis.com/v1beta"
+api_key_env_var = "GOOGLE_API_KEY"
+
+[[models]]
+name = "google/gemini-3-flash-preview"
+provider = "google"
+alias = "my-agent-model"
+temperature = 0.5
+```
+
 ## Platform Feature Matrix
 
-| Feature | OpenCode | Continue.dev | Claude Code |
-| :--- | :--- | :--- | :--- |
-| **Agent Format** | Individual `.md` files in `agents/` with YAML frontmatter | Entries in `prompts` array in `config.yaml` | Dedicated sections in monolithic `CLAUDE.md` |
-| **MCP Servers** | Full JSON config in `opencode.json` | `mcpServers` array; remote servers use `curl` shim | Reference list (no direct configuration) |
-| **Skills** | Extracted from `SKILL.md` frontmatter, copied to `skills/` | Copied to `skills/`, used via `uses: file://` | Included as instructional sections |
-| **Permissions** | Granular (allow/ask/deny) for tools, skills, and MCP | Implicit based on configuration | List of available capabilities |
-| **Rules** | Referenced in agent configs | Added to `rules` array | Inlined directly in `CLAUDE.md` |
-| **Custom Tools**| Full transpilation to JSON tools | Limited (manual inclusion required) | N/A (instructions provided) |
+| Feature | OpenCode | Continue.dev | Claude Code | Mistral Vibe |
+| :--- | :--- | :--- | :--- | :--- |
+| **Agent Format** | Individual `.md` files in `agents/` with YAML frontmatter | Entries in `prompts` array in `config.yaml` | Dedicated sections in monolithic `CLAUDE.md` | Agent TOML + prompt files |
+| **MCP Servers** | Full JSON config in `opencode.json` | `mcpServers` array; remote servers use `curl` shim | Reference list (no direct configuration) | `mcp_servers[]` in `config.toml` |
+| **Skills** | Extracted from `SKILL.md` frontmatter, copied to `skills/` | Copied to `skills/`, used via `uses: file://` | Included as instructional sections | Copied to `skills/` |
+| **Permissions** | Granular (allow/ask/deny) for tools, skills, and MCP | Implicit based on configuration | List of available capabilities | Tool-level allow/ask in agent TOML |
+| **Rules** | Referenced in agent configs | Added to `rules` array | Inlined directly in `CLAUDE.md` | Inlined in system prompt |
+| **Custom Tools**| Full transpilation to JSON tools | Limited (manual inclusion required) | N/A (instructions provided) | N/A (uses native tools) |
 
 ## Permissions Model Divergence
 
@@ -198,7 +227,8 @@ All core files are validated against JSON schemas:
 3. **transpile-opencode** - Generate OpenCode configs (priority)
 4. **transpile-continue** - Generate Continue configs
 5. **transpile-claude** - Generate Claude configs
-6. **test** - Validate generated outputs
+6. **transpile-mistral** - Generate Mistral Vibe configs
+7. **test** - Validate generated outputs
 
 Each step runs in GitHub Actions on push to main.
 
