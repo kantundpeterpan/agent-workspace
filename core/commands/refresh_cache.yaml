@@ -1,0 +1,4 @@
+name: "refresh-cache"
+description: "Refresh current file cache by re-reading files in the workspace."
+prompt: |
+    Refresh the current file cache by re-reading all necessary files in the workspace to prepare for the next command.
