@@ -2,8 +2,8 @@ name: academic-writer
 description: Drafts, revises, and polishes all sections of academic papers  -  abstracts, introductions, methods, results, and
   discussion  -  with proper citations and discipline style
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.4
 skills:
 - academic-writing

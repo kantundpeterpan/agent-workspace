@@ -3,8 +3,8 @@ description: Leads software engineering projects from requirements through desig
   the feature backlog, coordinating code review, and enforcing engineering standards
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.3
 
 skills:

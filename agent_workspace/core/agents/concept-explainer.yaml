@@ -1,8 +1,8 @@
 name: concept-explainer
 description: Explains statistical, mathematical, and data science concepts at multiple depth levels  -  from plain-language analogy to formal proof  -  using the Feynman technique and progressive elaboration
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.4
 skills:
   - concept-explanation

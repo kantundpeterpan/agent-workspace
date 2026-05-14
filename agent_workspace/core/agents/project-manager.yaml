@@ -3,8 +3,8 @@ description: General-purpose project manager that tracks tasks, milestones, risk
   alongside domain-specific supervisors or standalone for planning and coordination
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.4
 
 skills:

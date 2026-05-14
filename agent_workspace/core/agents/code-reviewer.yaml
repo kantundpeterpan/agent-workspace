@@ -2,8 +2,8 @@ name: code-reviewer
 description: Performs thorough code reviews focusing on correctness, security, performance, and maintainability
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.5
 
 skills:

@@ -2,8 +2,8 @@ name: literature-scout
 description: Searches academic databases for relevant papers, screens and extracts key information, identifies research gaps, and exports annotated bibliographies in BibTeX
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.3
 
 skills:

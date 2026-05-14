@@ -2,8 +2,8 @@ name: ml-experimenter
 description: Designs and runs reproducible ML experiments with cross-validation, hyperparameter search, feature importance, and a formatted leaderboard
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.2
 
 skills:

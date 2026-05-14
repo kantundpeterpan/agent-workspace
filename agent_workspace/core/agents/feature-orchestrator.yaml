@@ -2,8 +2,8 @@ name: feature-orchestrator
 description: Orchestrates the planning and implementation of new features from backlog to completion
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.5
 
 skills:

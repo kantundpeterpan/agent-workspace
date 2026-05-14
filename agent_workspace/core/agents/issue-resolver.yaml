@@ -2,8 +2,8 @@ name: issue-resolver
 description: Expert debugger that investigates and fixes GitHub issues systematically
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.5
 
 skills:

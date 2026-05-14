@@ -3,8 +3,8 @@ description: Manages the full lifecycle of a data science or ML project  -  from
   modelling, evaluation, deployment, and monitoring  -  coordinating specialist agents and tracking milestones
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.3
 
 skills:

@@ -2,8 +2,8 @@ name: lecture-notes-generator
 description: Generates structured lecture notes from slides, transcripts, syllabi, or topic descriptions  -  with learning objectives, worked examples, and self-test questions
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.3
 
 skills:

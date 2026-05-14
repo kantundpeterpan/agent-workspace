@@ -3,8 +3,8 @@ description: Coordinates the writing of a full academic paper or thesis from out
   section ownership, citation consistency, style compliance, and revision rounds
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.3
 
 skills:

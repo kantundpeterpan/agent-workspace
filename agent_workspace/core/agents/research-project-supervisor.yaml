@@ -3,8 +3,8 @@ description: Oversees an end-to-end quantitative research project  -  from quest
   writing, and submission  -  coordinating all specialist agents and keeping the project on track
 
 model:
-  provider: google
-  model: gemini-3-flash-preview
+  provider: opencode-go
+  model: deepseek-v4-flash
   temperature: 0.3
 
 skills:
