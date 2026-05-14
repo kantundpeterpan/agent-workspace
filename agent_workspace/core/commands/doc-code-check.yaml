@@ -1,0 +1,9 @@
+name: doc-code-check
+description: Check alignment of documentation and codebase.
+prompt: |
+  Review the provided documentation and codebase to identify any discrepancies or misalignments. 
+  Focus on ensuring that the documentation accurately reflects the functionality, behavior, and structure of the code. 
+  Highlight any areas where the documentation may be outdated, incomplete, or misleading in relation to the codebase.
+
+  Documentation:
+  $ARGUMENTS

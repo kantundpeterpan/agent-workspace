@@ -1,0 +1,6 @@
+name: doc-changes
+description: Check documentation against code changes.
+prompt: |
+  Review the provided documentation in relation to the recent code changes.
+  Identify any discrepancies, outdated information, or areas where the documentation may not accurately reflect the new codebase. 
+  Focus on ensuring that the documentation is up-to-date and provides a clear understanding
