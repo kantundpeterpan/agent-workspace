@@ -1,0 +1,48 @@
+name: finance-investing
+description: Finance and investing -- fundamental & quantitative stock analysis, portfolio construction, risk management, derivatives, macroeconomic strategy, and financial data engineering
+requires_language: true
+
+agents:
+  - finance-project-supervisor
+  - stock-analyst
+  - quant-researcher
+  - macro-analyst
+  - portfolio-manager
+  - risk-manager
+  - options-strategist
+  - financial-data-engineer
+
+skills:
+  - financial-statement-analysis
+  - stock-valuation
+  - macroeconomic-analysis
+  - quantitative-research
+  - backtesting
+  - options-modeling
+  - sentiment-financial
+  - portfolio-optimization
+  - risk-modeling
+  - financial-data-engineering
+  - trading-execution
+
+commands:
+  - analyze-stock
+  - build-portfolio
+  - quant-strategy
+  - run-backtest
+  - stock-screen
+  - options-price
+  - risk-report
+  - fin-data
+
+mcp_servers:
+  - filesystem
+  - context7
+  - anthropic-memory
+  - git
+
+custom_tools:
+  - finance-data-loader
+  - portfolio-optimizer
+  - backtest-runner
+  - options-calculator

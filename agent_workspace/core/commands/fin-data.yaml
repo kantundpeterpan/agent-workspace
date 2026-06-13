@@ -1,0 +1,16 @@
+name: fin-data
+description: Fetch and prepare financial data for analysis from market APIs, with cleaning and quality checks
+prompt: |
+  Fetch and prepare financial data for the following request:
+
+  Workflow:
+  1. Identify the required data: prices, fundamentals, macro indicators, or alternative data
+  2. Source from appropriate APIs: yfinance (equities), FRED (macro), Alpha Vantage (equities/technical)
+  3. Implement caching to respect API rate limits and enable re-runs
+  4. Clean the data: handle missing values, detect and flag outliers, adjust for corporate actions
+  5. Align data across different frequencies (daily + quarterly → common calendar)
+  6. Perform data quality checks: coverage assessment, missing date reports, stale data flags
+  7. Save processed data with versioned filenames and metadata
+  8. Produce a data quality summary: schema, coverage period, ticker count, known issues
+
+  Data request: $ARGUMENTS

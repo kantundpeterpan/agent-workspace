@@ -1,0 +1,16 @@
+name: quant-strategy
+description: Develop a systematic quantitative trading strategy with signal construction, factor analysis, and evaluation
+prompt: |
+  Develop a systematic quantitative trading strategy based on the following brief:
+
+  Workflow:
+  1. Formulate the alpha hypothesis with economic intuition
+  2. Define the investment universe and data requirements
+  3. Construct the signal: transformations, normalisation, sector neutralisation
+  4. Analyse factor properties: Information Coefficient, rank IC, IC decay, quintile spreads
+  5. Check factor correlation with known factors to ensure uniqueness
+  6. Perform cross-sectional (Fama-MacBeth) and time-series analysis
+  7. Document the factor construction, evaluation, and known limitations
+  8. Prepare for backtesting with clear entry/exit rules and universe definition
+
+  Strategy brief: $ARGUMENTS

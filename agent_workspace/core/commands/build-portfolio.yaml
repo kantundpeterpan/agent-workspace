@@ -1,0 +1,16 @@
+name: build-portfolio
+description: Construct an optimal portfolio from a universe of assets based on investment objectives and constraints
+prompt: |
+  Construct an optimal investment portfolio based on the following requirements:
+
+  1. Define the investment universe (tickers, ETFs, asset classes)
+  2. Specify the investment objective (max Sharpe, min volatility, target return, risk parity)
+  3. Estimate expected returns and covariance matrix (use shrinkage if sample is short)
+  4. Choose optimization methodology (Markowitz MVO, Black-Litterman, Risk Parity, or Factor-based)
+  5. Apply constraints: long-only, max position weight, max sector weight, max turnover
+  6. Run optimisation and present the efficient frontier
+  7. Analyse the resulting portfolio: weight allocation, risk decomposition, factor exposure
+  8. Provide concentration metrics (top holdings, effective N, HHI)
+  9. Recommend rebalancing schedule and threshold
+
+  Portfolio requirements: $ARGUMENTS

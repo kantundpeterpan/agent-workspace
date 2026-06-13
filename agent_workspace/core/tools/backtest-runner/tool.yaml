@@ -1,0 +1,81 @@
+name: backtest-runner
+description: Programmatic backtesting engine with performance metrics, equity curves, drawdown analysis, and overfitting detection
+
+exports:
+  - name: run_backtest
+    type: function
+    object: run_backtest
+
+schema:
+  input:
+    type: object
+    required: [prices, signals]
+    properties:
+      prices:
+        type: array
+        items:
+          type: object
+        description: Daily price data with date and asset columns
+      signals:
+        type: array
+        items:
+          type: object
+        description: Signal data aligned with prices (1 = long, -1 = short, 0 = flat)
+      initial_capital:
+        type: number
+        default: 100000
+        description: Starting portfolio value
+      transaction_cost:
+        type: number
+        default: 0.001
+        description: Per-trade transaction cost (fraction)
+      benchmark_prices:
+        type: array
+        items:
+          type: object
+        description: Benchmark price data for comparison
+      risk_free_rate:
+        type: number
+        default: 0.0
+        description: Annual risk-free rate (decimal)
+
+  output:
+    type: object
+    required: [status, metrics]
+    properties:
+      status:
+        type: string
+        enum: [success, error]
+      metrics:
+        type: object
+        properties:
+          total_return:
+            type: number
+          annualized_return:
+            type: number
+          annualized_volatility:
+            type: number
+          sharpe_ratio:
+            type: number
+          sortino_ratio:
+            type: number
+          max_drawdown:
+            type: number
+          calmar_ratio:
+            type: number
+          win_rate:
+            type: number
+          profit_factor:
+            type: number
+      equity_curve:
+        type: array
+      drawdown_curve:
+        type: array
+      monthly_returns:
+        type: object
+      message:
+        type: string
+
+implementation:
+  language: python
+  entry: script.py

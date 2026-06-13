@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["prices", "signals"],
+  "properties": {
+    "prices": {
+      "type": "array",
+      "items": { "type": "object" },
+      "description": "Daily price data with date and asset columns"
+    },
+    "signals": {
+      "type": "array",
+      "items": { "type": "object" },
+      "description": "Signal data aligned with prices"
+    },
+    "initial_capital": {
+      "type": "number",
+      "default": 100000,
+      "description": "Starting portfolio value"
+    },
+    "transaction_cost": {
+      "type": "number",
+      "default": 0.001,
+      "description": "Per-trade transaction cost (fraction)"
+    },
+    "benchmark_prices": {
+      "type": "array",
+      "items": { "type": "object" },
+      "description": "Benchmark price data"
+    },
+    "risk_free_rate": {
+      "type": "number",
+      "default": 0.0,
+      "description": "Annual risk-free rate"
+    }
+  }
+}

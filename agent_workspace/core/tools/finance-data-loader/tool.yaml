@@ -1,0 +1,76 @@
+name: finance-data-loader
+description: Fetch financial market data from yfinance, FRED, and Alpha Vantage APIs with caching and quality checks
+
+exports:
+  - name: load_data
+    type: function
+    object: load_data
+
+schema:
+  input:
+    type: object
+    required: [source, symbol]
+    properties:
+      source:
+        type: string
+        enum: [yfinance, fred, alpha_vantage]
+        description: Data source to fetch from
+      symbol:
+        type: string
+        description: Ticker symbol (e.g. AAPL), FRED series ID (e.g. GDP), or Alpha Vantage symbol
+      start_date:
+        type: string
+        description: Start date in YYYY-MM-DD format
+      end_date:
+        type: string
+        description: End date in YYYY-MM-DD format
+      interval:
+        type: string
+        enum: [1d, 1wk, 1mo]
+        default: 1d
+        description: Data frequency
+      cache_path:
+        type: string
+        description: Directory for caching fetched data
+      fred_api_key:
+        type: string
+        description: FRED API key (overrides environment variable)
+      alpha_vantage_key:
+        type: string
+        description: Alpha Vantage API key (overrides environment variable)
+
+  output:
+    type: object
+    required: [status]
+    properties:
+      status:
+        type: string
+        enum: [success, error]
+      data:
+        type: object
+        description: The fetched data as a JSON-serialisable structure
+      metadata:
+        type: object
+        properties:
+          source:
+            type: string
+          symbol:
+            type: string
+          start_date:
+            type: string
+          end_date:
+            type: string
+          rows:
+            type: integer
+          columns:
+            type: integer
+          fetch_timestamp:
+            type: string
+          cached:
+            type: boolean
+      message:
+        type: string
+
+implementation:
+  language: python
+  entry: script.py

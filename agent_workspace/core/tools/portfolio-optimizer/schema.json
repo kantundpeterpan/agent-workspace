@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["method", "returns"],
+  "properties": {
+    "method": {
+      "type": "string",
+      "enum": ["markowitz", "risk_parity", "black_litterman", "max_sharpe", "min_variance"],
+      "description": "Optimisation method"
+    },
+    "returns": {
+      "type": "array",
+      "items": { "type": "object" },
+      "description": "Array of return objects with columns as asset names"
+    },
+    "lambda_val": {
+      "type": "number",
+      "default": 1.0,
+      "description": "Risk aversion parameter"
+    },
+    "target_return": {
+      "type": "number",
+      "description": "Target portfolio return"
+    },
+    "max_weight": {
+      "type": "number",
+      "default": 1.0,
+      "description": "Maximum weight per asset"
+    },
+    "market_weights": {
+      "type": "array",
+      "items": { "type": "number" },
+      "description": "Market cap weights for Black-Litterman"
+    },
+    "views": {
+      "type": "array",
+      "items": { "type": "object" },
+      "description": "Investor views for Black-Litterman"
+    }
+  }
+}

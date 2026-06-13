@@ -1,0 +1,16 @@
+name: options-price
+description: Calculate option prices, Greeks, implied volatility, and payoff diagrams for single and multi-leg strategies
+prompt: |
+  Price and analyse options for the following request:
+
+  Workflow:
+  1. Determine the appropriate pricing model (European → BSM; American → binomial tree; path-dependent → Monte Carlo)
+  2. Gather inputs: underlying price, strike(s), time to expiry, risk-free rate, implied/historical volatility, dividend yield
+  3. Compute option price(s) using the selected model
+  4. Calculate all Greeks (Delta, Gamma, Theta, Vega, Rho) with interpretation
+  5. If market price is known, compute implied volatility
+  6. Construct payoff diagram: P&L vs underlying price at expiry, with breakeven points annotated
+  7. For multi-leg strategies: show each leg's payoff plus combined position
+  8. Report max profit, max loss, probability of profit estimate, and risk-reward ratio
+
+  Options request: $ARGUMENTS
