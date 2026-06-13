@@ -14,7 +14,8 @@
           "coding",
           "stats",
           "study",
-          "university"
+          "university",
+          "finance-investing"
         ],
         "description": "Scope name"
       },
@@ -38,19 +39,27 @@
           "exam-coach",
           "experiment-tracker",
           "feature-orchestrator",
+          "finance-project-supervisor",
+          "financial-data-engineer",
           "flashcard-generator",
           "issue-resolver",
           "lecture-notes-generator",
           "literature-scout",
+          "macro-analyst",
           "ml-experimenter",
           "model-deployer",
           "obsidian-manager",
+          "options-strategist",
           "pair-programmer",
+          "portfolio-manager",
           "presentation-builder",
+          "quant-researcher",
           "report-writer",
           "reproducibility-guardian",
           "revision-planner",
+          "risk-manager",
           "stats-modeler",
+          "stock-analyst",
           "ts-forecaster"
         ],
         "description": "Agent name"
@@ -65,6 +74,7 @@
         "type": "string",
         "enum": [
           "academic-writing",
+          "backtesting",
           "bayesian-inference",
           "causal-inference",
           "classical-statistics",
@@ -73,20 +83,30 @@
           "dataset-documentation",
           "eda-visualization",
           "experiment-reporting",
+          "financial-data-engineering",
+          "financial-statement-analysis",
           "flashcard-generation",
           "github-issue-resolution",
           "lecture-note-generation",
           "literature-search",
+          "macroeconomic-analysis",
           "ml-experimentation",
           "obsidian-vault-management",
+          "options-modeling",
           "pair-programming",
+          "portfolio-optimization",
           "presentation-generation",
+          "quantitative-research",
           "report-writing",
           "reproducibility-audit",
           "revision-planning",
+          "risk-modeling",
+          "sentiment-financial",
           "statistical-inference",
+          "stock-valuation",
           "testing",
-          "time-series-analysis"
+          "time-series-analysis",
+          "trading-execution"
         ],
         "description": "Skill name"
       },
@@ -99,7 +119,9 @@
       "items": {
         "type": "string",
         "enum": [
+          "analyze-stock",
           "audit-reproducibility",
+          "build-portfolio",
           "check-assumptions",
           "check-convergence",
           "check-stationarity",
@@ -111,6 +133,7 @@
           "draft-report-section",
           "explain",
           "explain-concept",
+          "fin-data",
           "generate-lecture-notes",
           "generate-slides",
           "generate-study-summary",
@@ -119,18 +142,39 @@
           "lint-notebook",
           "make-flashcards",
           "obsidian-capture",
+          "options-price",
           "plan-revision",
           "power-calculation",
           "practice-exam",
+          "quant-strategy",
           "refactor",
+          "risk-report",
+          "run-backtest",
           "run-classical-test",
           "run-eda",
           "scaffold-api",
+          "stock-screen",
           "summarize-experiment",
           "test",
           "write-plan-to-md"
         ],
         "description": "Command name"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "custom_tools": {
+      "type": "array",
+      "description": "Custom tools to include. Values are unioned with whatever the selected scopes already include.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "backtest-runner",
+          "finance-data-loader",
+          "options-calculator",
+          "portfolio-optimizer"
+        ],
+        "description": "Custom tool name"
       },
       "uniqueItems": true,
       "default": []

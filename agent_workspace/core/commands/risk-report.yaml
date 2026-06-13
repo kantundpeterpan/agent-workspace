@@ -1,0 +1,19 @@
+name: risk-report
+description: Generate a comprehensive risk report with VaR, CVaR, stress tests, scenario analysis, and risk decomposition
+prompt: |
+  Generate a comprehensive risk report for the following portfolio or strategy:
+
+  Workflow:
+  1. Compute Value-at-Risk (VaR) at 95% and 99% confidence using all three methods: parametric, historical simulation, and Monte Carlo
+  2. Compute Conditional VaR (Expected Shortfall) alongside each VaR
+  3. Backtest VaR: Kupiec proportion of failures test, Christoffersen conditional coverage test, exception chart
+  4. Run historical stress scenarios: GFC, COVID crash, dot-com, Black Monday, etc.
+  5. Define and apply 3-5 hypothetical stress scenarios relevant to the portfolio
+  6. Perform reverse stress testing: what would cause a specified loss?
+  7. Decompose risk: marginal contribution, component contribution, factor risk decomposition
+  8. Analyse concentration: top-5 positions, sector concentration, factor concentration
+  9. Assess liquidity risk: days to liquidate, bid-ask spread impact
+  10. Report leverage: gross/net exposure, VaR as % of NAV
+  11. Provide a clear risk summary with colour-coded risk dashboard and action items
+
+  Portfolio/strategy to assess: $ARGUMENTS

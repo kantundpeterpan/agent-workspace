@@ -1,0 +1,75 @@
+name: portfolio-optimizer
+description: Run mean-variance, risk-parity, and Black-Litterman portfolio optimisation with constraints
+
+exports:
+  - name: optimize
+    type: function
+    object: optimize
+
+schema:
+  input:
+    type: object
+    required: [method, returns]
+    properties:
+      method:
+        type: string
+        enum: [markowitz, risk_parity, black_litterman, max_sharpe, min_variance]
+        description: Optimisation method
+      returns:
+        type: array
+        items:
+          type: object
+        description: Array of return objects with columns as asset names and values as returns
+      lambda_val:
+        type: number
+        default: 1.0
+        description: Risk aversion parameter for Markowitz
+      target_return:
+        type: number
+        description: Target portfolio return for efficient frontier
+      max_weight:
+        type: number
+        default: 1.0
+        description: Maximum weight per asset (0-1)
+      market_weights:
+        type: array
+        items:
+          type: number
+        description: Market capitalisation weights for Black-Litterman prior
+      views:
+        type: array
+        items:
+          type: object
+        description: Investor views for Black-Litterman
+
+  output:
+    type: object
+    required: [status, weights]
+    properties:
+      status:
+        type: string
+        enum: [success, error]
+      weights:
+        type: object
+        description: Asset name to weight mapping
+      portfolio_return:
+        type: number
+      portfolio_volatility:
+        type: number
+      sharpe_ratio:
+        type: number
+      risk_contributions:
+        type: object
+      efficient_frontier:
+        type: object
+        properties:
+          returns:
+            type: array
+          volatilities:
+            type: array
+      message:
+        type: string
+
+implementation:
+  language: python
+  entry: script.py

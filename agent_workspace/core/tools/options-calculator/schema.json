@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["S", "K", "T", "r", "sigma"],
+  "properties": {
+    "S": { "type": "number", "description": "Current underlying price" },
+    "K": { "type": "number", "description": "Strike price" },
+    "T": { "type": "number", "description": "Time to expiration (years)" },
+    "r": { "type": "number", "description": "Risk-free interest rate" },
+    "sigma": { "type": "number", "description": "Volatility (decimal)" },
+    "q": { "type": "number", "default": 0.0, "description": "Continuous dividend yield" },
+    "option_type": { "type": "string", "enum": ["call", "put"], "default": "call" },
+    "model": {
+      "type": "string",
+      "enum": ["black_scholes", "binomial", "monte_carlo"],
+      "default": "black_scholes"
+    },
+    "binomial_steps": { "type": "integer", "default": 200 },
+    "monte_carlo_sims": { "type": "integer", "default": 100000 },
+    "payoff_range": { "type": "number", "default": 0.3 }
+  }
+}

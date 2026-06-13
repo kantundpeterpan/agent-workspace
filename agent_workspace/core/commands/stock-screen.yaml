@@ -1,0 +1,20 @@
+name: stock-screen
+description: Screen stocks by fundamental and technical criteria -- value, growth, momentum, quality, and dividend filters
+prompt: |
+  Run a stock screen based on the following criteria:
+
+  Workflow:
+  1. Define the screening universe (index, sector, market cap range)
+  2. Specify screening criteria with thresholds:
+     - Value: P/E < X, P/B < Y, EV/EBITDA < Z, FCF yield > W%
+     - Growth: Revenue growth > X%, EPS growth > Y%
+     - Momentum: 6m/12m return > X%, relative strength percentile > Y
+     - Quality: ROE > X%, debt/equity < Y, interest coverage > Z
+     - Dividends: dividend yield > X%, payout ratio < Y%
+     - Size: market cap between X and Y
+  3. Fetch and clean data for all stocks in the universe
+  4. Apply filters sequentially, reporting passing count at each stage
+  5. Rank the survivors by a composite score or owner-specified criterion
+  6. Present results with key financial metrics for each screened stock
+
+  Screening criteria: $ARGUMENTS

@@ -1,0 +1,91 @@
+name: options-calculator
+description: Compute option prices using Black-Scholes, binomial trees, and Monte Carlo; calculate Greeks and implied volatility; generate payoff diagrams
+
+exports:
+  - name: calculate
+    type: function
+    object: calculate
+
+schema:
+  input:
+    type: object
+    required: [S, K, T, r, sigma]
+    properties:
+      S:
+        type: number
+        description: Current underlying price
+      K:
+        type: number
+        description: Strike price
+      T:
+        type: number
+        description: Time to expiration (years)
+      r:
+        type: number
+        description: Risk-free interest rate (decimal)
+      sigma:
+        type: number
+        description: Volatility (decimal)
+      q:
+        type: number
+        default: 0.0
+        description: Continuous dividend yield
+      option_type:
+        type: string
+        enum: [call, put]
+        default: call
+      model:
+        type: string
+        enum: [black_scholes, binomial, monte_carlo]
+        default: black_scholes
+        description: Pricing model
+      binomial_steps:
+        type: integer
+        default: 200
+        description: Number of steps for binomial tree
+      monte_carlo_sims:
+        type: integer
+        default: 100000
+        description: Number of Monte Carlo simulations
+      payoff_range:
+        type: number
+        default: 0.3
+        description: +/- percentage range for payoff diagram
+
+  output:
+    type: object
+    required: [status, price]
+    properties:
+      status:
+        type: string
+        enum: [success, error]
+      price:
+        type: number
+      greeks:
+        type: object
+        properties:
+          delta:
+            type: number
+          gamma:
+            type: number
+          theta:
+            type: number
+          vega:
+            type: number
+          rho:
+            type: number
+      implied_volatility:
+        type: number
+      payoff_diagram:
+        type: object
+        properties:
+          spot_range:
+            type: array
+          payoff:
+            type: array
+      message:
+        type: string
+
+implementation:
+  language: python
+  entry: script.py

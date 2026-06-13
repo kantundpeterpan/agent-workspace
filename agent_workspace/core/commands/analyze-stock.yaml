@@ -1,0 +1,15 @@
+name: analyze-stock
+description: Perform fundamental and technical analysis of a stock ticker -- valuation, ratios, financial health, and sector context
+prompt: |
+  Perform a comprehensive stock analysis for the following ticker. Use the full analysis workflow:
+
+  1. Gather financial data (income statement, balance sheet, cash flow) for the last 5 years
+  2. Compute key profitability, liquidity, leverage, efficiency, and valuation ratios
+  3. Build a DCF model with revenue forecast, margin projections, WACC, and terminal value
+  4. Perform comparable company analysis with 5-10 peers
+  5. Construct a football-field valuation summary with bull/base/bear cases
+  6. Analyse the macroeconomic context relevant to this stock's sector
+  7. Assess earnings quality and flag any accounting red flags
+  8. Provide a clear investment thesis with key catalysts and risks
+
+  Ticker and analysis request: $ARGUMENTS

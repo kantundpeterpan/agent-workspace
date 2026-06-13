@@ -1,0 +1,16 @@
+name: run-backtest
+description: Backtest a trading strategy with full performance metrics, walk-forward validation, and overfitting detection
+prompt: |
+  Run a comprehensive backtest for the following trading strategy:
+
+  Workflow:
+  1. Verify data quality: point-in-time, survivorship-free, properly adjusted for corporate actions
+  2. Implement the strategy with explicit entry/exit rules and position sizing
+  3. Run walk-forward analysis with a minimum 30% out-of-sample period
+  4. Calculate all performance metrics: total return, annualised return, volatility, Sharpe, Sortino, max drawdown, Calmar, win rate, profit factor, information ratio
+  5. Benchmark against the appropriate passive index
+  6. Plot: equity curve (strategy vs benchmark), drawdown chart, monthly returns heatmap, return distribution
+  7. Run overfitting tests: deflated Sharpe ratio, performance degradation ratio (OOS/IS), parameter sensitivity analysis
+  8. Produce a backtest report with all findings, metrics, and risk warnings
+
+  Strategy to backtest: $ARGUMENTS
