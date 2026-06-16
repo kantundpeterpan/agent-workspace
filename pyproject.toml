@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agent-workspace"
 version = "0.1.0"
-description = "Tool-agnostic AI agent configuration hub that transpiles to OpenCode, Continue.dev, and Claude Code"
+description = "Tool-agnostic AI agent configuration hub that transpiles to OpenCode, Continue.dev, Claude Code, and Mistral Vibe"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
-keywords = ["agents", "ai", "opencode", "continue", "claude", "llm", "mcp"]
+keywords = ["agents", "ai", "opencode", "continue", "claude", "mistral", "llm", "mcp"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -28,6 +28,7 @@ dependencies = [
     "requests>=2.28.0",
     "questionary>=2.0.1",
     "rich>=13.7.0",
+    "toml>=0.10.0",
 ]
 
 [project.optional-dependencies]

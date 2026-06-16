@@ -71,34 +71,38 @@ except ImportError as e:
 
 console = Console()
 
-CUSTOM_STYLE = Style([
-    ("qmark", "fg:#00bfff bold"),
-    ("question", "bold"),
-    ("answer", "fg:#00ff7f bold"),
-    ("pointer", "fg:#00bfff bold"),
-    ("highlighted", "fg:#00bfff bold"),
-    ("selected", "fg:#00ff7f"),
-    ("separator", "fg:#555555"),
-    ("instruction", "fg:#888888"),
-])
+CUSTOM_STYLE = Style(
+    [
+        ("qmark", "fg:#00bfff bold"),
+        ("question", "bold"),
+        ("answer", "fg:#00ff7f bold"),
+        ("pointer", "fg:#00bfff bold"),
+        ("highlighted", "fg:#00bfff bold"),
+        ("selected", "fg:#00ff7f"),
+        ("separator", "fg:#555555"),
+        ("instruction", "fg:#888888"),
+    ]
+)
 
 LANGUAGE_DESCRIPTIONS = {
     "python": "Python only (pandas, statsmodels, PyMC, scikit-learn…)",
-    "r":      "R only (tidyverse, lme4, brms, forecast…)",
-    "both":   "Bilingual: Python + R in every agent",
+    "r": "R only (tidyverse, lme4, brms, forecast…)",
+    "both": "Bilingual: Python + R in every agent",
 }
 
 TARGET_DESCRIPTIONS = {
-    "all":      "All platforms: OpenCode + Continue.dev + Claude Code",
+    "all": "All platforms: OpenCode + Continue.dev + Claude Code + Mistral Vibe",
     "opencode": "OpenCode only",
     "continue": "Continue.dev only",
-    "claude":   "Claude Code only",
+    "claude": "Claude Code only",
+    "mistral": "Mistral Vibe only",
 }
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _load_scope_meta(workspace: Path) -> Dict[str, Dict]:
     """Load metadata for every scope from its YAML file.
@@ -118,7 +122,7 @@ def _load_scope_meta(workspace: Path) -> Dict[str, Dict]:
         with open(path) as f:
             data = yaml.safe_load(f) or {}
         meta[path.stem] = {
-            "description":       data.get("description", ""),
+            "description": data.get("description", ""),
             "requires_language": bool(data.get("requires_language", False)),
         }
     return meta
@@ -144,16 +148,24 @@ def _load_available_items(workspace: Path) -> Dict[str, List[str]]:
     """Discover available agents, skills, commands, scopes, and custom tools."""
     tools_dir = workspace / "core" / "tools"
     return {
-        "scopes": sorted(p.stem for p in (workspace / "core" / "scopes").glob("*.yaml")),
-        "agents": sorted(p.stem for p in (workspace / "core" / "agents").glob("*.yaml")),
+        "scopes": sorted(
+            p.stem for p in (workspace / "core" / "scopes").glob("*.yaml")
+        ),
+        "agents": sorted(
+            p.stem for p in (workspace / "core" / "agents").glob("*.yaml")
+        ),
         "skills": sorted(
             p.name for p in (workspace / "core" / "skills").iterdir() if p.is_dir()
         ),
-        "commands": sorted(p.stem for p in (workspace / "core" / "commands").glob("*.yaml")),
+        "commands": sorted(
+            p.stem for p in (workspace / "core" / "commands").glob("*.yaml")
+        ),
         "mcp_servers": sorted(
             p.stem for p in (workspace / "core" / "mcp-servers").glob("*.json")
         ),
-        "tools": sorted(p.name for p in tools_dir.iterdir() if p.is_dir()) if tools_dir.is_dir() else [],
+        "tools": sorted(p.name for p in tools_dir.iterdir() if p.is_dir())
+        if tools_dir.is_dir()
+        else [],
     }
 
 
@@ -194,11 +206,11 @@ def _run_transpile(workspace: Path, config: Dict, dry_run: bool = False) -> bool
     # None (absent) → omit the flag entirely (no constraint, defer to scope).
     # []  (explicit empty) → pass the flag with no names (install nothing).
     for config_key, flag in [
-        ("agents",      "--agents"),
-        ("skills",      "--skills"),
-        ("commands",    "--commands"),
+        ("agents", "--agents"),
+        ("skills", "--skills"),
+        ("commands", "--commands"),
         ("mcp_servers", "--mcp-servers"),
-        ("tools",       "--tools"),
+        ("tools", "--tools"),
     ]:
         val = config.get(config_key)
         if val is not None:
@@ -222,11 +234,15 @@ def _run_transpile(workspace: Path, config: Dict, dry_run: bool = False) -> bool
     return result.returncode == 0
 
 
-def _setup_symlinks(workspace: Path, project_root: Path, target: str, dry_run: bool) -> None:
+def _setup_symlinks(
+    workspace: Path, project_root: Path, target: str, dry_run: bool
+) -> None:
     """Set up platform symlinks in the project root."""
     console.print("\n[bold]🔗 Setting up symlinks...[/]")
 
-    targets = ["opencode", "continue", "claude"] if target == "all" else [target]
+    targets = (
+        ["opencode", "continue", "claude", "mistral"] if target == "all" else [target]
+    )
 
     for t in targets:
         if t == "opencode":
@@ -252,6 +268,12 @@ def _setup_symlinks(workspace: Path, project_root: Path, target: str, dry_run: b
                 project_root / "CLAUDE.md",
                 dry_run,
             )
+        elif t == "mistral":
+            _create_symlink(
+                workspace / "platforms" / "mistral",
+                project_root / ".vibe",
+                dry_run,
+            )
 
 
 def _save_config(config: Dict, path: Path, dry_run: bool) -> None:
@@ -264,9 +286,12 @@ def _save_config(config: Dict, path: Path, dry_run: bool) -> None:
         console.print(f"\n[yellow]  (dry-run — config not saved to {path})[/]")
         return
     to_save = {
-        k: v for k, v in config.items()
-        if not k.startswith("_") and not (
-            k in ("scopes", "agents", "skills", "commands", "mcp_servers", "tools") and v is None
+        k: v
+        for k, v in config.items()
+        if not k.startswith("_")
+        and not (
+            k in ("scopes", "agents", "skills", "commands", "mcp_servers", "tools")
+            and v is None
         )
     }
     with open(path, "w") as f:
@@ -290,13 +315,13 @@ def _load_config(path: Path) -> Optional[Dict]:
         cfg = yaml.safe_load(f) or {}
     for key in ("scopes", "agents", "skills", "commands", "mcp_servers", "tools"):
         if key not in cfg:
-            cfg[key] = None          # absent → no constraint
+            cfg[key] = None  # absent → no constraint
         else:
             val = cfg[key]
             if val is None or val == "all" or val == ["all"]:
-                cfg[key] = None      # explicit "all" or null → no constraint
+                cfg[key] = None  # explicit "all" or null → no constraint
             elif isinstance(val, str):
-                cfg[key] = [val]     # single-item shorthand
+                cfg[key] = [val]  # single-item shorthand
             # else: keep val as-is ([] or a list of names)
     cfg.setdefault("language", "python")
     cfg.setdefault("target", "all")
@@ -309,49 +334,52 @@ def _default_config() -> Dict:
     None for list fields means "no constraint" (install everything / defer to scope).
     """
     return {
-        "scopes":      None,
-        "language":    "python",
-        "target":      "all",
-        "agents":      None,
-        "skills":      None,
-        "commands":    None,
+        "scopes": None,
+        "language": "python",
+        "target": "all",
+        "agents": None,
+        "skills": None,
+        "commands": None,
         "mcp_servers": None,
-        "tools":       None,
+        "tools": None,
     }
 
 
 # Category name → config key mapping
 _CATEGORY_MAP: Dict[str, str] = {
-    "agent":       "agents",
-    "agents":      "agents",
-    "skill":       "skills",
-    "skills":      "skills",
-    "command":     "commands",
-    "commands":    "commands",
-    "mcp":         "mcp_servers",
+    "agent": "agents",
+    "agents": "agents",
+    "skill": "skills",
+    "skills": "skills",
+    "command": "commands",
+    "commands": "commands",
+    "mcp": "mcp_servers",
     "mcp_servers": "mcp_servers",
-    "tool":        "tools",
-    "tools":       "tools",
-    "scope":       "scopes",
-    "scopes":      "scopes",
+    "tool": "tools",
+    "tools": "tools",
+    "scope": "scopes",
+    "scopes": "scopes",
 }
 
 # Category config key → available key in _load_available_items()
 _AVAILABLE_KEY: Dict[str, str] = {
-    "agents":      "agents",
-    "skills":      "skills",
-    "commands":    "commands",
+    "agents": "agents",
+    "skills": "skills",
+    "commands": "commands",
     "mcp_servers": "mcp_servers",
-    "tools":       "tools",
-    "scopes":      "scopes",
+    "tools": "tools",
+    "scopes": "scopes",
 }
 
 
 def _scope_items(workspace: Path, scope_names: List[str]) -> Dict[str, Set[str]]:
     """Return the union of all items brought in by the given scopes."""
     result: Dict[str, Set[str]] = {
-        "agents": set(), "skills": set(), "commands": set(),
-        "mcp_servers": set(), "tools": set(),
+        "agents": set(),
+        "skills": set(),
+        "commands": set(),
+        "mcp_servers": set(),
+        "tools": set(),
     }
     scopes_dir = workspace / "core" / "scopes"
     for name in scope_names:
@@ -393,7 +421,7 @@ def _compute_stale_output_files(workspace: Path, config: Dict) -> List[Path]:
             scope_set = scope_derived[scope_key]
             if scope_set:
                 filt = set(scope_set)
-        items = config.get(cfg_key)   # None = absent, [] = explicit empty, [...] = list
+        items = config.get(cfg_key)  # None = absent, [] = explicit empty, [...] = list
         if items is not None:
             if items:
                 # Non-empty: union with (or replace) scope-derived filter
@@ -429,7 +457,9 @@ def _compute_stale_output_files(workspace: Path, config: Dict) -> List[Path]:
     # 3. Walk the platforms output dirs and collect stale files
     # ------------------------------------------------------------------
     target = config.get("target", "all")
-    active_targets = ["opencode", "continue", "claude"] if target == "all" else [target]
+    active_targets = (
+        ["opencode", "continue", "claude", "mistral"] if target == "all" else [target]
+    )
     platforms = workspace / "platforms"
     stale: List[Path] = []
 
@@ -447,6 +477,14 @@ def _compute_stale_output_files(workspace: Path, config: Dict) -> List[Path]:
             if candidate.stem not in expected_commands:
                 stale.append(candidate)
 
+    if "mistral" in active_targets:
+        for candidate in (platforms / "mistral" / "agents").glob("*.toml"):
+            if candidate.stem not in expected_agents:
+                stale.append(candidate)
+        for candidate in (platforms / "mistral" / "prompts").glob("*.md"):
+            if candidate.stem not in expected_agents:
+                stale.append(candidate)
+
     return sorted(stale)
 
 
@@ -454,13 +492,16 @@ def _compute_stale_output_files(workspace: Path, config: Dict) -> List[Path]:
 # Interactive wizard
 # ---------------------------------------------------------------------------
 
+
 def run_wizard(workspace: Path, available: Dict) -> Dict:
     """Run the full interactive install wizard and return the resolved config."""
-    console.print(Panel.fit(
-        "[bold cyan]agent-workspace install assistant[/]\n"
-        "[dim]Navigate with arrows · Space to select · Enter to confirm[/]",
-        border_style="cyan",
-    ))
+    console.print(
+        Panel.fit(
+            "[bold cyan]agent-workspace install assistant[/]\n"
+            "[dim]Navigate with arrows · Space to select · Enter to confirm[/]",
+            border_style="cyan",
+        )
+    )
 
     scope_meta = _load_scope_meta(workspace)
 
@@ -472,14 +513,19 @@ def run_wizard(workspace: Path, available: Dict) -> Dict:
         )
         for name in available["scopes"]
     ]
-    selected_scopes: List[str] = questionary.checkbox(
-        "Which scopes do you want to install?",
-        choices=scope_choices,
-        style=CUSTOM_STYLE,
-    ).ask() or []
+    selected_scopes: List[str] = (
+        questionary.checkbox(
+            "Which scopes do you want to install?",
+            choices=scope_choices,
+            style=CUSTOM_STYLE,
+        ).ask()
+        or []
+    )
 
     if not selected_scopes:
-        console.print("[yellow]⚠  No scopes selected — all agents/skills/commands will be installed.[/]")
+        console.print(
+            "[yellow]⚠  No scopes selected — all agents/skills/commands will be installed.[/]"
+        )
 
     # 2. Language (only if stats/university/study selected)
     language = "python"
@@ -488,24 +534,30 @@ def run_wizard(workspace: Path, available: Dict) -> Dict:
             questionary.Choice(title=f"{k:8s} {v}", value=k)
             for k, v in LANGUAGE_DESCRIPTIONS.items()
         ]
-        language = questionary.select(
-            "Language for statistics / data-science agents:",
-            choices=lang_choices,
-            default="python",
-            style=CUSTOM_STYLE,
-        ).ask() or "python"
+        language = (
+            questionary.select(
+                "Language for statistics / data-science agents:",
+                choices=lang_choices,
+                default="python",
+                style=CUSTOM_STYLE,
+            ).ask()
+            or "python"
+        )
 
     # 3. Target platform
     target_choices = [
         questionary.Choice(title=f"{k:10s} {v}", value=k)
         for k, v in TARGET_DESCRIPTIONS.items()
     ]
-    target = questionary.select(
-        "Which platform(s) to install for?",
-        choices=target_choices,
-        default="all",
-        style=CUSTOM_STYLE,
-    ).ask() or "all"
+    target = (
+        questionary.select(
+            "Which platform(s) to install for?",
+            choices=target_choices,
+            default="all",
+            style=CUSTOM_STYLE,
+        ).ask()
+        or "all"
+    )
 
     # 4. Optional granular additions
     add_extra = questionary.confirm(
@@ -520,29 +572,41 @@ def run_wizard(workspace: Path, available: Dict) -> Dict:
     extra_mcp: List[str] = []
 
     if add_extra:
-        extra_agents = questionary.checkbox(
-            "Extra agents (in addition to scope):",
-            choices=sorted(available["agents"]),
-            style=CUSTOM_STYLE,
-        ).ask() or []
+        extra_agents = (
+            questionary.checkbox(
+                "Extra agents (in addition to scope):",
+                choices=sorted(available["agents"]),
+                style=CUSTOM_STYLE,
+            ).ask()
+            or []
+        )
 
-        extra_skills = questionary.checkbox(
-            "Extra skills:",
-            choices=sorted(available["skills"]),
-            style=CUSTOM_STYLE,
-        ).ask() or []
+        extra_skills = (
+            questionary.checkbox(
+                "Extra skills:",
+                choices=sorted(available["skills"]),
+                style=CUSTOM_STYLE,
+            ).ask()
+            or []
+        )
 
-        extra_commands = questionary.checkbox(
-            "Extra commands:",
-            choices=sorted(available["commands"]),
-            style=CUSTOM_STYLE,
-        ).ask() or []
+        extra_commands = (
+            questionary.checkbox(
+                "Extra commands:",
+                choices=sorted(available["commands"]),
+                style=CUSTOM_STYLE,
+            ).ask()
+            or []
+        )
 
-        extra_mcp = questionary.checkbox(
-            "MCP servers to include:",
-            choices=sorted(available["mcp_servers"]),
-            style=CUSTOM_STYLE,
-        ).ask() or []
+        extra_mcp = (
+            questionary.checkbox(
+                "MCP servers to include:",
+                choices=sorted(available["mcp_servers"]),
+                style=CUSTOM_STYLE,
+            ).ask()
+            or []
+        )
 
     # 5. Save config?
     save_config = questionary.confirm(
@@ -555,10 +619,10 @@ def run_wizard(workspace: Path, available: Dict) -> Dict:
         "scopes": selected_scopes if selected_scopes else None,
         "language": language,
         "target": target,
-        "agents":      extra_agents   if extra_agents   else None,
-        "skills":      extra_skills   if extra_skills   else None,
-        "commands":    extra_commands if extra_commands else None,
-        "mcp_servers": extra_mcp      if extra_mcp      else None,
+        "agents": extra_agents if extra_agents else None,
+        "skills": extra_skills if extra_skills else None,
+        "commands": extra_commands if extra_commands else None,
+        "mcp_servers": extra_mcp if extra_mcp else None,
         "_save": save_config,
     }
     return config
@@ -567,6 +631,7 @@ def run_wizard(workspace: Path, available: Dict) -> Dict:
 # ---------------------------------------------------------------------------
 # Summary display
 # ---------------------------------------------------------------------------
+
 
 def _fmt_filter(val: Optional[List[str]]) -> str:
     """Format a list-field config value for display."""
@@ -584,16 +649,18 @@ def show_summary(config: Dict, available: Dict) -> None:
     table.add_column("Value")
 
     scopes = config.get("scopes")
-    table.add_row("Scopes",   ", ".join(scopes) if scopes else "[dim](all — no scope filter)[/]")
+    table.add_row(
+        "Scopes", ", ".join(scopes) if scopes else "[dim](all — no scope filter)[/]"
+    )
     table.add_row("Language", config.get("language", "python"))
-    table.add_row("Target",   config.get("target", "all"))
+    table.add_row("Target", config.get("target", "all"))
 
     for label, key in [
-        ("Agents",      "agents"),
-        ("Skills",      "skills"),
-        ("Commands",    "commands"),
+        ("Agents", "agents"),
+        ("Skills", "skills"),
+        ("Commands", "commands"),
         ("MCP servers", "mcp_servers"),
-        ("Tools",       "tools"),
+        ("Tools", "tools"),
     ]:
         table.add_row(label, _fmt_filter(config.get(key)))
 
@@ -605,6 +672,7 @@ def show_summary(config: Dict, available: Dict) -> None:
 # ---------------------------------------------------------------------------
 # Management subcommand implementations
 # ---------------------------------------------------------------------------
+
 
 def cmd_status(workspace: Path, project_root: Path, config_path: Path) -> None:
     """Show the current configuration and which items are active."""
@@ -636,7 +704,9 @@ def cmd_status(workspace: Path, project_root: Path, config_path: Path) -> None:
         ("Tools", "tools"),
     ]:
         explicit: List[str] = config.get(config_key) or []
-        via_scope: List[str] = sorted(scope_derived.get(config_key, set()) - set(explicit))
+        via_scope: List[str] = sorted(
+            scope_derived.get(config_key, set()) - set(explicit)
+        )
 
         if not explicit and not via_scope:
             continue
@@ -697,12 +767,12 @@ def cmd_list(
         console.print(t)
 
     categories = [
-        ("Scopes",      "scopes",      "scopes"),
-        ("Agents",      "agents",      "agents"),
-        ("Skills",      "skills",      "skills"),
-        ("Commands",    "commands",    "commands"),
+        ("Scopes", "scopes", "scopes"),
+        ("Agents", "agents", "agents"),
+        ("Skills", "skills", "skills"),
+        ("Commands", "commands", "commands"),
         ("MCP servers", "mcp_servers", "mcp_servers"),
-        ("Tools",       "tools",       "tools"),
+        ("Tools", "tools", "tools"),
     ]
 
     console.print()
@@ -752,13 +822,18 @@ def cmd_add(
         existing: List[str] = config.get(config_key) or []
         choices = [n for n in valid if n not in existing]
         if not choices:
-            console.print(f"[yellow]All available {config_key} are already in your config.[/]")
+            console.print(
+                f"[yellow]All available {config_key} are already in your config.[/]"
+            )
             sys.exit(0)
-        names = questionary.checkbox(
-            f"Select {category}(s) to add:",
-            choices=sorted(choices),
-            style=CUSTOM_STYLE,
-        ).ask() or []
+        names = (
+            questionary.checkbox(
+                f"Select {category}(s) to add:",
+                choices=sorted(choices),
+                style=CUSTOM_STYLE,
+            ).ask()
+            or []
+        )
         if not names:
             console.print("[yellow]Nothing selected — cancelled.[/]")
             sys.exit(0)
@@ -774,7 +849,9 @@ def cmd_add(
 
     config = _load_config(config_path)
     if config is None:
-        console.print(f"[yellow]⚠  No config found at {config_path} — creating a default one.[/]")
+        console.print(
+            f"[yellow]⚠  No config found at {config_path} — creating a default one.[/]"
+        )
         config = _default_config()
 
     existing = config.get(config_key) or []
@@ -799,7 +876,9 @@ def cmd_add(
         sys.exit(1)
 
     if not no_symlinks:
-        _setup_symlinks(workspace, project_root, config.get("target", "all"), dry_run=dry_run)
+        _setup_symlinks(
+            workspace, project_root, config.get("target", "all"), dry_run=dry_run
+        )
 
 
 def cmd_remove(
@@ -833,7 +912,9 @@ def cmd_remove(
 
     config = _load_config(config_path)
     if config is None:
-        console.print(f"[red]❌ No config found at {config_path}. Nothing to remove.[/]")
+        console.print(
+            f"[red]❌ No config found at {config_path}. Nothing to remove.[/]"
+        )
         sys.exit(1)
 
     # Prompt for names if missing
@@ -844,11 +925,14 @@ def cmd_remove(
                 f"[yellow]No explicit {config_key} in your config to remove.[/]"
             )
             sys.exit(0)
-        names = questionary.checkbox(
-            f"Select {category}(s) to remove:",
-            choices=sorted(explicit_items),
-            style=CUSTOM_STYLE,
-        ).ask() or []
+        names = (
+            questionary.checkbox(
+                f"Select {category}(s) to remove:",
+                choices=sorted(explicit_items),
+                style=CUSTOM_STYLE,
+            ).ask()
+            or []
+        )
         if not names:
             console.print("[yellow]Nothing selected — cancelled.[/]")
             sys.exit(0)
@@ -862,8 +946,14 @@ def cmd_remove(
         else:
             scope_derived = _scope_items(workspace, config.get("scopes", []))
             in_scope = name in scope_derived.get(config_key, set())
-            hint = " (it is included via a scope — remove the scope instead)" if in_scope else ""
-            console.print(f"  [yellow]⚠  {name} not found in explicit {config_key}{hint}[/]")
+            hint = (
+                " (it is included via a scope — remove the scope instead)"
+                if in_scope
+                else ""
+            )
+            console.print(
+                f"  [yellow]⚠  {name} not found in explicit {config_key}{hint}[/]"
+            )
 
     config[config_key] = existing
 
@@ -878,7 +968,9 @@ def cmd_remove(
         sys.exit(1)
 
     if not no_symlinks:
-        _setup_symlinks(workspace, project_root, config.get("target", "all"), dry_run=dry_run)
+        _setup_symlinks(
+            workspace, project_root, config.get("target", "all"), dry_run=dry_run
+        )
 
 
 def cmd_apply(
@@ -943,12 +1035,16 @@ def cmd_apply(
         sys.exit(1)
 
     if not no_symlinks:
-        _setup_symlinks(workspace, project_root, config.get("target", "all"), dry_run=dry_run)
+        _setup_symlinks(
+            workspace, project_root, config.get("target", "all"), dry_run=dry_run
+        )
 
-    console.print(Panel.fit(
-        "[bold green]✅ Apply complete![/]",
-        border_style="green",
-    ))
+    console.print(
+        Panel.fit(
+            "[bold green]✅ Apply complete![/]",
+            border_style="green",
+        )
+    )
 
 
 def cmd_set(
@@ -963,7 +1059,7 @@ def cmd_set(
     """Update a scalar setting in the config and retranspile."""
     allowed: Dict[str, List[str]] = {
         "language": ["python", "r", "both"],
-        "target":   ["opencode", "continue", "claude", "all"],
+        "target": ["opencode", "continue", "claude", "mistral", "all"],
     }
 
     # Prompt for key if missing
@@ -1003,7 +1099,9 @@ def cmd_set(
 
     config = _load_config(config_path)
     if config is None:
-        console.print(f"[yellow]⚠  No config found at {config_path} — creating a default one.[/]")
+        console.print(
+            f"[yellow]⚠  No config found at {config_path} — creating a default one.[/]"
+        )
         config = _default_config()
 
     old_value = config.get(key)
@@ -1018,7 +1116,9 @@ def cmd_set(
         sys.exit(1)
 
     if not no_symlinks:
-        _setup_symlinks(workspace, project_root, config.get("target", "all"), dry_run=dry_run)
+        _setup_symlinks(
+            workspace, project_root, config.get("target", "all"), dry_run=dry_run
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1047,7 +1147,9 @@ def main() -> None:
         epilog=__doc__,
     )
     top.add_argument(
-        "--project-root", metavar="PATH", default=None,
+        "--project-root",
+        metavar="PATH",
+        default=None,
         help="Project root to install symlinks into (default: current directory).",
     )
 
@@ -1060,27 +1162,36 @@ def main() -> None:
         "install", help="Run the interactive install wizard (default)."
     )
     p_install.add_argument(
-        "--config", metavar="PATH",
+        "--config",
+        metavar="PATH",
         help="Load configuration from a YAML file instead of running the wizard.",
     )
     p_install.add_argument(
-        "--scopes", nargs="*", metavar="SCOPE",
+        "--scopes",
+        nargs="*",
+        metavar="SCOPE",
         help="Scopes to install (coding, stats, university, study).",
     )
     p_install.add_argument(
-        "--language", choices=["python", "r", "both"], default=None,
+        "--language",
+        choices=["python", "r", "both"],
+        default=None,
         help="Language variant for stats/DS agents.",
     )
     p_install.add_argument(
-        "--target", choices=["opencode", "continue", "claude", "all"], default=None,
+        "--target",
+        choices=["opencode", "continue", "claude", "mistral", "all"],
+        default=None,
         help="Platform target.",
     )
     p_install.add_argument(
-        "--dry-run", action="store_true",
+        "--dry-run",
+        action="store_true",
         help="Preview what would be done without writing any files.",
     )
     p_install.add_argument(
-        "--no-symlinks", action="store_true",
+        "--no-symlinks",
+        action="store_true",
         help="Run transpile but skip symlink creation.",
     )
 
@@ -1091,7 +1202,9 @@ def main() -> None:
         "status", help="Show the current config and active items."
     )
     p_status.add_argument(
-        "--config", metavar="PATH", default=None,
+        "--config",
+        metavar="PATH",
+        default=None,
         help="Config file to inspect (default: install.config.yaml in project root).",
     )
 
@@ -1102,12 +1215,16 @@ def main() -> None:
         "list", help="List available items with their activation status."
     )
     p_list.add_argument(
-        "category", nargs="?", default=None,
+        "category",
+        nargs="?",
+        default=None,
         metavar="CATEGORY",
         help="Filter to a single category: agent, skill, command, mcp, scope.",
     )
     p_list.add_argument(
-        "--config", metavar="PATH", default=None,
+        "--config",
+        metavar="PATH",
+        default=None,
         help="Config file to read active items from.",
     )
 
@@ -1118,16 +1235,23 @@ def main() -> None:
         "add", help="Add items to the active config and retranspile."
     )
     p_add.add_argument(
-        "category", nargs="?", default=None, metavar="CATEGORY",
+        "category",
+        nargs="?",
+        default=None,
+        metavar="CATEGORY",
         help="Category to add to: agent, skill, command, mcp, scope. "
-             "Omit to be prompted interactively.",
+        "Omit to be prompted interactively.",
     )
     p_add.add_argument(
-        "names", nargs="*", metavar="NAME",
+        "names",
+        nargs="*",
+        metavar="NAME",
         help="Item name(s) to add. Omit to be prompted interactively.",
     )
     p_add.add_argument(
-        "--config", metavar="PATH", default=None,
+        "--config",
+        metavar="PATH",
+        default=None,
         help="Config file to modify (default: install.config.yaml).",
     )
     p_add.add_argument("--dry-run", action="store_true")
@@ -1140,16 +1264,23 @@ def main() -> None:
         "remove", help="Remove items from the explicit config and retranspile."
     )
     p_remove.add_argument(
-        "category", nargs="?", default=None, metavar="CATEGORY",
+        "category",
+        nargs="?",
+        default=None,
+        metavar="CATEGORY",
         help="Category to remove from: agent, skill, command, mcp, scope. "
-             "Omit to be prompted interactively.",
+        "Omit to be prompted interactively.",
     )
     p_remove.add_argument(
-        "names", nargs="*", metavar="NAME",
+        "names",
+        nargs="*",
+        metavar="NAME",
         help="Item name(s) to remove. Omit to be prompted interactively.",
     )
     p_remove.add_argument(
-        "--config", metavar="PATH", default=None,
+        "--config",
+        metavar="PATH",
+        default=None,
         help="Config file to modify (default: install.config.yaml).",
     )
     p_remove.add_argument("--dry-run", action="store_true")
@@ -1162,13 +1293,17 @@ def main() -> None:
         "apply", help="Retranspile using the saved install.config.yaml — no prompts."
     )
     p_apply.add_argument(
-        "--config", metavar="PATH", default=None,
+        "--config",
+        metavar="PATH",
+        default=None,
         help="Config file to apply (default: install.config.yaml).",
     )
     p_apply.add_argument("--dry-run", action="store_true")
     p_apply.add_argument("--no-symlinks", action="store_true")
     p_apply.add_argument(
-        "-y", "--yes", action="store_true",
+        "-y",
+        "--yes",
+        action="store_true",
         help="Skip confirmation prompt when removing stale files.",
     )
 
@@ -1179,15 +1314,23 @@ def main() -> None:
         "set", help="Update a scalar setting (language, target) and retranspile."
     )
     p_set.add_argument(
-        "key", nargs="?", default=None, metavar="KEY",
+        "key",
+        nargs="?",
+        default=None,
+        metavar="KEY",
         help="Setting to change: language, target. Omit to be prompted interactively.",
     )
     p_set.add_argument(
-        "value", nargs="?", default=None, metavar="VALUE",
+        "value",
+        nargs="?",
+        default=None,
+        metavar="VALUE",
         help="New value. Omit to be prompted interactively.",
     )
     p_set.add_argument(
-        "--config", metavar="PATH", default=None,
+        "--config",
+        metavar="PATH",
+        default=None,
         help="Config file to modify (default: install.config.yaml).",
     )
     p_set.add_argument("--dry-run", action="store_true")
@@ -1199,7 +1342,9 @@ def main() -> None:
     args = top.parse_args(raw)
 
     workspace = _find_workspace_root()
-    project_root = Path(args.project_root).resolve() if args.project_root else Path.cwd()
+    project_root = (
+        Path(args.project_root).resolve() if args.project_root else Path.cwd()
+    )
 
     console.print(f"[dim]Workspace: {workspace}[/]")
     console.print(f"[dim]Project:   {project_root}[/]\n")
@@ -1217,37 +1362,51 @@ def main() -> None:
         cmd_status(workspace, project_root, _resolve_config_path(args.config))
 
     elif args.subcommand == "list":
-        cmd_list(workspace, project_root, _resolve_config_path(args.config), args.category)
+        cmd_list(
+            workspace, project_root, _resolve_config_path(args.config), args.category
+        )
 
     elif args.subcommand == "add":
         cmd_add(
-            workspace, project_root,
+            workspace,
+            project_root,
             _resolve_config_path(args.config),
-            args.category, args.names,
-            args.dry_run, args.no_symlinks,
+            args.category,
+            args.names,
+            args.dry_run,
+            args.no_symlinks,
         )
 
     elif args.subcommand == "remove":
         cmd_remove(
-            workspace, project_root,
+            workspace,
+            project_root,
             _resolve_config_path(args.config),
-            args.category, args.names,
-            args.dry_run, args.no_symlinks,
+            args.category,
+            args.names,
+            args.dry_run,
+            args.no_symlinks,
         )
 
     elif args.subcommand == "apply":
         cmd_apply(
-            workspace, project_root,
+            workspace,
+            project_root,
             _resolve_config_path(args.config),
-            args.dry_run, args.no_symlinks, args.yes,
+            args.dry_run,
+            args.no_symlinks,
+            args.yes,
         )
 
     elif args.subcommand == "set":
         cmd_set(
-            workspace, project_root,
+            workspace,
+            project_root,
             _resolve_config_path(args.config),
-            args.key, args.value,
-            args.dry_run, args.no_symlinks,
+            args.key,
+            args.value,
+            args.dry_run,
+            args.no_symlinks,
         )
 
     else:
@@ -1263,12 +1422,12 @@ def main() -> None:
             console.print(f"📄 Loaded config from [bold]{config_path}[/]")
         elif args.scopes or args.language or args.target:
             config = {
-                "scopes":      args.scopes or None,
-                "language":    args.language or "python",
-                "target":      args.target or "all",
-                "agents":      None,
-                "skills":      None,
-                "commands":    None,
+                "scopes": args.scopes or None,
+                "language": args.language or "python",
+                "target": args.target or "all",
+                "agents": None,
+                "skills": None,
+                "commands": None,
                 "mcp_servers": None,
                 "_save": False,
             }
@@ -1287,7 +1446,12 @@ def main() -> None:
             console.print("[yellow]🔍 Dry run — no files will be written.[/]")
 
         # Confirm before proceeding (only in interactive mode)
-        if not args.config and not args.scopes and not args.language and not args.target:
+        if (
+            not args.config
+            and not args.scopes
+            and not args.language
+            and not args.target
+        ):
             proceed = questionary.confirm(
                 "Proceed with installation?", default=True, style=CUSTOM_STYLE
             ).ask()
@@ -1311,12 +1475,14 @@ def main() -> None:
             target = config.get("target", "all")
             _setup_symlinks(workspace, project_root, target, dry_run=args.dry_run)
 
-        console.print(Panel.fit(
-            "[bold green]✅ Installation complete![/]\n\n"
-            "Your project now has access to the selected agents, skills, and commands.\n"
-            "[dim]To update: git submodule update --remote && python scripts/workspace.py install[/]",
-            border_style="green",
-        ))
+        console.print(
+            Panel.fit(
+                "[bold green]✅ Installation complete![/]\n\n"
+                "Your project now has access to the selected agents, skills, and commands.\n"
+                "[dim]To update: git submodule update --remote && python scripts/workspace.py install[/]",
+                border_style="green",
+            )
+        )
 
 
 if __name__ == "__main__":
